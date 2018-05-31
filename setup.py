@@ -19,44 +19,45 @@ import os
 from setuptools import setup
 
 os.environ['TRAVIS_CI'] = 'True'
+setup_kwargs = {}
 
 try:
     from setuptools import setup
-
-    setup_kwargs = {'entry_points': {'console_scripts': ['landsat=landsat.landsat_cli:cli_runner']}}
+    # setup_kwargs = {'entry_points': {'console_scripts': ['metio=metio.metio_cli:cli_runner']}}
 except ImportError:
     from distutils.core import setup
-
-    setup_kwargs = {'scripts': ['bin/landsat/landsat_cli']}
+    # setup_kwargs = {'scripts': ['bin/metio/metio_cli']}
 
 with open('README.txt') as f:
     readme = f.read()
 
-tag = '0.4.95'
+tag = '0.0.1'
 
 setup(name='Landsat578',
       version=tag,
-      description='Very simple API to download Landsat data from Landsat 1 - 5, 7, and 8 from Google',
+      description='Very simple API to download gridded meteorology data from the web',
       long_description=readme,
       setup_requires=['nose>=1.0'],
-      py_modules=['landsat'],
+      py_modules=[],
       license='Apache',
       classifiers=[
-          'Development Status :: 3 - Alpha',
+          'Development Status :: 1 - Alpha',
           'Intended Audience :: Science/Research',
           'Topic :: Scientific/Engineering :: GIS',
           'License :: OSI Approved :: Apache Software License',
           'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3.6'],
-      keywords='landsat download hydrology remote sensing',
+      keywords='landsat gridded meteorology hydrology remote sensing',
       author='David Ketchum',
       author_email='dgketchum@gmail.com',
       platforms='Posix; MacOS X; Windows',
-      packages=['landsat'],
-      download_url='https://github.com/{}/{}/archive/{}.tar.gz'.format('dgketchum', 'Landsat578', tag),
+      packages=[],
+      download_url='https://github.com/{}/{}/archive/{}.tar.gz'.format('dgketchum', 'Metio', tag),
       url='https://github.com/dgketchum',
       test_suite='tests.test_suite.suite',
-      install_requires=['pyyaml', 'pandas', 'requests', 'lxml', 'future'],
+      install_requires=['numpy', 'geopy', 'pandas', 'requests', 'fiona',
+                        'future', 'xarray', 'pyproj', 'rasterio', 'xlrd',
+                        'SatelliteImage', 'bs4', 'netcdf4'],
       **setup_kwargs)
 
 

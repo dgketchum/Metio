@@ -21,12 +21,15 @@ def suite():
 
     print('Testing.......................................')
 
-    from tests.test_image import LandsatImageTestCase, Landsat5TestCase, Landsat7TestCase, Landsat8TestCase
+    from tests.test_gridmet import TestGridMet
+    from tests.test_agrimet import TestAgrimet
+    from tests.test_eddy_flux import EddyTowerTestCase
+    from tests.test_topowx import TestTopoWX
 
     loader = unittest.TestLoader()
     test_suite = unittest.TestSuite()
 
-    tests = (LandsatImageTestCase, Landsat5TestCase, Landsat7TestCase, Landsat8TestCase,)
+    tests = (TestGridMet, TestAgrimet, EddyTowerTestCase, TestTopoWX,)
 
     for t in tests:
         test_suite.addTest(loader.loadTestsFromTestCase(t))
