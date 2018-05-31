@@ -14,7 +14,7 @@
 # limitations under the License.
 # =============================================================================================
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
 from future.standard_library import hooks
 
@@ -193,12 +193,6 @@ class Thredds(object):
         date_ind = date_range(self.start, self.end, freq='d')
 
         return date_ind
-
-    def _dtime_to_xldate(self):
-        s_sup, e_sup = self.start.timetuple(), self.end.timetuple()
-        s_tup, e_tup = (s_sup[0], s_sup[1], s_sup[2]), (e_sup[0], e_sup[1], e_sup[2])
-        sxl, exl = xldate_from_date_tuple(s_tup, 0), xldate_from_date_tuple(e_tup, 0)
-        return sxl, exl
 
     @staticmethod
     def _dtime_to_dtime64(dtime):
@@ -427,7 +421,7 @@ class GridMet(Thredds):
                                           east_val, north_val))
 
         if self.variable != 'elev':
-            start_xl, end_xl = self._dtime_to_xldate()
+            start_xl, end_xl = self._dtime_to_doy()
 
             xray.rename({'day': 'time'}, inplace=True)
             subset = xray.loc[dict(time=slice(start_xl, end_xl),
@@ -460,7 +454,7 @@ class GridMet(Thredds):
 
         url = self._build_url()
         xray = open_dataset(url)
-        start_xl, end_xl = self._dtime_to_xldate()
+        start_xl, end_xl = self._dtime_to_doy()
         subset = xray.sel(lon=self.lon, lat=self.lat, method='nearest')
         subset = subset.loc[dict(day=slice(start_xl, end_xl))]
         subset.rename({'day': 'time'}, inplace=True)
@@ -490,7 +484,7 @@ class GridMet(Thredds):
         url = self._build_url()
         xray = open_dataset(url)
         if self.variable != 'elev':
-            start_xl, end_xl = self._dtime_to_xldate()
+            start_xl, end_xl = self._dtime_to_doy()
             subset = xray.loc[dict(day=slice(start_xl, end_xl))]
             subset.rename({'day': 'time'}, inplace=True)
         else:
