@@ -22,6 +22,7 @@ import os
 import copy
 from shutil import rmtree
 from tempfile import mkdtemp
+from datetime import datetime
 from numpy import empty, float32, datetime64, timedelta64, argmin, abs, array
 from rasterio import open as rasopen
 from rasterio.crs import CRS
@@ -421,11 +422,9 @@ class GridMet(Thredds):
                                           east_val, north_val))
 
         if self.variable != 'elev':
-            start_xl, end_xl = self._dtime_to_doy()
-
             xray.rename({'day': 'time'}, inplace=True)
-            subset = xray.loc[dict(time=slice(start_xl, end_xl),
-                                   lat=slice(north_val, south_val),
+            subset = xray.loc[dict(time=slice(self.start, self.end),
+                                   lat=slice(south_val, north_val),
                                    lon=slice(west_val, east_val))]
 
             date_ind = self._date_index()
@@ -454,9 +453,8 @@ class GridMet(Thredds):
 
         url = self._build_url()
         xray = open_dataset(url)
-        start_xl, end_xl = self._dtime_to_doy()
         subset = xray.sel(lon=self.lon, lat=self.lat, method='nearest')
-        subset = subset.loc[dict(day=slice(start_xl, end_xl))]
+        subset = subset.loc[dict(day=slice(self.start, self.end))]
         subset.rename({'day': 'time'}, inplace=True)
         date_ind = self._date_index()
         subset['time'] = date_ind
@@ -484,8 +482,7 @@ class GridMet(Thredds):
         url = self._build_url()
         xray = open_dataset(url)
         if self.variable != 'elev':
-            start_xl, end_xl = self._dtime_to_doy()
-            subset = xray.loc[dict(day=slice(start_xl, end_xl))]
+            subset = xray.loc[dict(day=slice(self.start, self.end))]
             subset.rename({'day': 'time'}, inplace=True)
         else:
             subset = xray
