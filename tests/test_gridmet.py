@@ -47,16 +47,17 @@ class TestGridMet(unittest.TestCase):
         self.end = datetime(2014, 8, 20)
 
         self.date = datetime(2014, 8, 20)
-
-        self.grimet_raster_dir = 'tests/data/met_test/gridmet_rasters'
+        self.grimet_raster_dir = os.path.join(os.path.dirname(__file__),
+                                              'data', 'met_test', 'gridmet_rasters')
         # time series test points here are agrimet stations
-        self.agri_points = 'tests/data/points/agrimet_test_sites.shp'
+        self.agri_points = os.path.join(os.path.dirname(__file__),
+                                        'data', 'points', 'agrimet_test_sites.shp')
         # met_test.shp are points between sites to test location
         self.search_point_file = 'tests/data/points/agrimet_location_test.shp'
         # 41_25 points are used to test native gridmet raster to conforming array,
         # these have been projected to the native CRS (i.e., 4326)
         self.scene_points = 'tests/data/points/038_027_US_Mj_manypoints_4326.shp'
-        self.dir_name_LC8 = '/data01/images/sandbox/ssebop_analysis/038_027/2014/LC80380272014227LGN01'
+        self.dir_name_LC8 = '/home/dgketchum/IrrigationGIS/tests/gridmet/LC80380272014227LGN01'
 
     def test_instantiate(self):
         """ Test instantiation of Thredds.Grimet object.
@@ -71,9 +72,9 @@ class TestGridMet(unittest.TestCase):
         """
         l8 = Landsat8(self.dir_name_LC8)
         polygon = l8.get_tile_geometry()
-        bounds = RasterBounds(affine_transform=l8.transform, profile=l8.profile)
+        bounds = RasterBounds(affine_transform=l8.rasterio_geometry['transform'], profile=l8.rasterio_geometry)
         gridmet = GridMet(self.var, date=self.date, bbox=bounds,
-                          target_profile=l8.profile, clip_feature=polygon)
+                          target_profile=l8.rasterio_geometry, clip_feature=polygon)
         pr = gridmet.get_data_subset()
         shape = 1, l8.rasterio_geometry['height'], l8.rasterio_geometry['width']
         self.assertEqual(pr.shape, shape)
