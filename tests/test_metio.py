@@ -18,8 +18,8 @@ import os
 from datetime import datetime
 from xarray import Dataset
 
-from metio.bounds import GeoBounds, RasterBounds
-from metio.thredds import GridMet, TopoWX
+from met.bounds import GeoBounds, RasterBounds
+from met.thredds import GridMet, TopoWX
 from sat_image.image import Landsat5
 
 
