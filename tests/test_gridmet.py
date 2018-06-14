@@ -129,7 +129,7 @@ class TestGridMet(unittest.TestCase):
         """
         l8 = Landsat8(self.dir_name_LC8)
         polygon = l8.get_tile_geometry()
-        bounds = RasterBounds(affine_transform=l8.transform,
+        bounds = RasterBounds(affine_transform=l8.rasterio_geometry['transform'],
                               profile=l8.profile, latlon=True)
 
         for day in rrule(DAILY, dtstart=self.start, until=self.end):
