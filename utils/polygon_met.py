@@ -1,5 +1,5 @@
 # ===============================================================================
-# Copyright 2017 dgketchum
+# Copyright 2018 dgketchum
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,30 +14,13 @@
 # limitations under the License.
 # ===============================================================================
 
-import unittest
+import os
 
 
-def suite():
-
-    print('Testing.......................................')
-
-    from utils import TestGridMet
-    from utils import TestAgrimet
-    from utils import EddyTowerTestCase
-    from utils import TestTopoWX
-
-    loader = unittest.TestLoader()
-    test_suite = unittest.TestSuite()
-
-    tests = (TestGridMet, TestAgrimet, EddyTowerTestCase, TestTopoWX,)
-
-    for t in tests:
-        test_suite.addTest(loader.loadTestsFromTestCase(t))
-
-    return test_suite
+def get_polygon_met_parameters(vector, dates):
+    pass
 
 
 if __name__ == '__main__':
-    unittest.TextTestRunner(verbosity=2).run(suite())
-
-# ===============================================================================
+    pass
+# ========================= EOF ====================================================================
