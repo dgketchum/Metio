@@ -86,8 +86,9 @@ class Agrimet(object):
             if not sat_image:
                 self.station = self.find_closest_station(lat, lon)
             else:
-                centroid = sat_image.scene_coords_deg
-                lat, lon = centroid[0], centroid[1]
+
+                lat = (sat_image.corner_ll_lat_product + sat_image.corner_ul_lat_product) / 2
+                lon = (sat_image.corner_ll_lon_product + sat_image.corner_lr_lon_product) / 2
                 self.station = self.find_closest_station(lat, lon)
 
         self.interval = interval

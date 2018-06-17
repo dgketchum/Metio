@@ -27,14 +27,15 @@ from sat_image.image import Landsat8
 
 class TestAgrimet(unittest.TestCase):
     def setUp(self):
-        self.point_file = 'tests/data/points/agrimet_location_test.shp'
+        self.root = os.path.dirname(__file__)
+        self.point_file = os.path.join(self.root, 'data', 'points', 'agrimet_location_test.shp')
         self.station_info = 'https://www.usbr.gov/pn/agrimet/agrimetmap/usbr_map.json'
-        self.dirname_image = 'tests/data/image_test/lc8_image'
+        self.dirname_image = os.path.join(self.root, 'data', 'image_test', 'lc8_image')
         self.site_ids = ['umhm', 'robi', 'hntu', 'faln', 'mdxo', 'mdso', 'masw']
         self.fetch_site = 'drlm'
         self.outside_PnGp_sites = ['pvan', 'mdki', 'laju']
-        self.points_dir = 'tests/data/points'
-        self.out_shape = 'tests/data/points/agmet_station_write_test.shp'
+        self.points_dir = os.path.join(self.root, 'data', 'points')
+        self.out_shape = os.path.join(self.root, 'data', 'points', 'agmet_station_write_test.shp')
 
     def test_instantiate_Agrimet(self):
         """ Test object instantiation.
