@@ -85,8 +85,8 @@ class TestGridMet(unittest.TestCase):
         """
         gridmet = GridMet(self.var, date=self.date)
         out = 'data/met_test/{}-{}-{}_pet.nc'.format(self.date.year,
-                                                           self.date.month,
-                                                           self.date.day)
+                                                     self.date.month,
+                                                     self.date.day)
         gridmet.write_netcdf(outputroot=out)
         self.assertTrue(os.path.exists(out))
         data = open_dataset(out)
@@ -114,6 +114,15 @@ class TestGridMet(unittest.TestCase):
                     val[dt][1] = gridmet_pet.iloc[0, 0]
                 for key, val in points.items():
                     self.assertEqual(val[dt][0], val[dt][1])
+
+    def test_elevation(self):
+
+        l8 = Landsat8(self.dir_name_LC8)
+        polygon = l8.get_tile_geometry()
+        bounds = RasterBounds(affine_transform=l8.rasterio_geometry['transform'], profile=l8.rasterio_geometry)
+        gridmet = GridMet('elev', date=self.date, bbox=bounds,
+                          target_profile=l8.rasterio_geometry, clip_feature=polygon)
+        gridmet.get_data_subset(os.path.join(self.grimet_raster_dir, 'elevation.tif'))
 
     def test_conforming_array_to_native(self):
         """ Test confoming array to native Gridmet raster.
