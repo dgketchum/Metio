@@ -84,7 +84,7 @@ class TestGridMet(unittest.TestCase):
         :return: 
         """
         gridmet = GridMet(self.var, date=self.date)
-        out = 'tests/data/met_test/{}-{}-{}_pet.nc'.format(self.date.year,
+        out = 'data/met_test/{}-{}-{}_pet.nc'.format(self.date.year,
                                                            self.date.month,
                                                            self.date.day)
         gridmet.write_netcdf(outputroot=out)
