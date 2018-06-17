@@ -8,7 +8,7 @@ from numpy import nanmean
 class MyTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.fetch_site = 'drlm'
+        self.fetch_site = 'evty'
         self.start = '2015-01-01'
         self.end = '2015-12-31'
         self.lat = 46.34

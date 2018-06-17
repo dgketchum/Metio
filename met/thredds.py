@@ -383,7 +383,7 @@ class GridMet(Thredds):
                        'fm100': 'dead_fuel_moisture_100hr',
                        'fm1000': 'dead_fuel_moisture_1000hr',
                        'pdsi': 'palmer_drought_severity_index',
-                       'etr': 'reference_evapotranspiration_alfalfa',
+                       'etr': 'potential_evapotranspiration',
                        'pet': 'potential_evapotranspiration',
                        'pr': 'precipitation_amount',
                        'rmax': 'relative_humidity',
