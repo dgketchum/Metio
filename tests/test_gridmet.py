@@ -56,7 +56,8 @@ class TestGridMet(unittest.TestCase):
         self.search_point_file = 'tests/data/points/agrimet_location_test.shp'
         # 41_25 points are used to test native gridmet raster to conforming array,
         # these have been projected to the native CRS (i.e., 4326)
-        self.scene_points = 'tests/data/points/038_027_US_Mj_manypoints_4326.shp'
+        self.scene_points = os.path.join(os.path.dirname(__file__), 'data', 'points',
+                                         '038_027_US_Mj_manypoints_4326.shp')
         self.dir_name_LC8 = '/home/dgketchum/IrrigationGIS/tests/gridmet/LC80380272014227LGN01'
 
     def test_instantiate(self):
@@ -122,6 +123,7 @@ class TestGridMet(unittest.TestCase):
         bounds = RasterBounds(affine_transform=l8.rasterio_geometry['transform'], profile=l8.rasterio_geometry)
         gridmet = GridMet('elev', date=self.date, bbox=bounds,
                           target_profile=l8.rasterio_geometry, clip_feature=polygon)
+        gridmet.save_raster()
         gridmet.get_data_subset(os.path.join(self.grimet_raster_dir, 'elevation.tif'))
 
     def test_conforming_array_to_native(self):
@@ -139,11 +141,11 @@ class TestGridMet(unittest.TestCase):
         l8 = Landsat8(self.dir_name_LC8)
         polygon = l8.get_tile_geometry()
         bounds = RasterBounds(affine_transform=l8.rasterio_geometry['transform'],
-                              profile=l8.profile, latlon=True)
+                              profile=l8.rasterio_geometry, latlon=True)
 
         for day in rrule(DAILY, dtstart=self.start, until=self.end):
             gridmet = GridMet(self.var, date=day, bbox=bounds,
-                              target_profile=l8.profile,
+                              target_profile=l8.rasterio_geometry,
                               clip_feature=polygon)
             date_str = datetime.strftime(day, '%Y-%m-%d')
             met_arr = os.path.join(self.grimet_raster_dir,
@@ -156,7 +158,7 @@ class TestGridMet(unittest.TestCase):
             points_dict = multi_raster_point_extract(local_raster=met_arr,
                                                      geographic_raster=native,
                                                      points=self.scene_points,
-                                                     image_profile=l8.profile)
+                                                     image_profile=l8.rasterio_geometry)
             geo_list, local_list = [], []
             for key, val in points_dict.items():
                 geo_list.append(val['geo_val'])
