@@ -31,8 +31,7 @@ class MyTestCase(unittest.TestCase):
             gridmet_tmax = gridmet.get_point_timeseries()
             gridmet_tmax = (gridmet_tmax - 273.15).values
             difference = (gridmet_tmax - agri_tmax) / agri_tmax
-            print(site)
-            self.assertLess(nanmean(difference), 0.1)
+            self.assertLess(nanmean(difference), -100000)
 
 
 if __name__ == '__main__':
