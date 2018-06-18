@@ -15,7 +15,6 @@
 # ===============================================================================
 
 import os
-from numpy import vstack, hstack
 from pandas import read_csv, DataFrame, date_range, concat
 from fiona import open as fopen
 from pyproj import Proj
@@ -33,15 +32,35 @@ TABLES = ['Broadwater_Missouri_Canal',
           'Fort_Belknap_Main_Diversion',
           'Fort_Shaw_Canal',
           'Glasgow_ID',
-          'Huntley_Main_Diversion',
-          'LYIP_North_Dakota',
           'Marshall_Canal',
+          'Huntley_Main_Diversion',
           'Paradise_Valley_ID',
           'Ruby_River',
           'Sun_River_project_Below_Pishkun',
+          'Two_Dot_Canal',
           'Vigilante_Canal',
-          'West_Bench_Canal',
+          'West_Bench_-112.0818, 47.5351Canal',
           'Yellowstone_Main_Diversion']
+
+NATURAL_SITES = {'Broadwater_Missouri_Canal': (-111.436, 46.330),
+                 'Broadwater_Missouri_West_Side_Canal': (-111.52093, 46.19899),
+                 'Dodson_North_Canal_Diversion': (-108.09676, 48.38433),
+                 'Dodson_South_Div_To_Bowdoin': (-108.00127, 48.33663),
+                 'East_Fork_Main_Canal_ab_Trout_Creek': (-113.39298, 46.21571),
+                 'Eldorado': (-112.3252, 47.9251),
+                 'Floweree_and_Floweree_Hamilton': (-112.0818, 47.5351),
+                 'Fort_Belknap_Main_Diversion': (-109.1423, 48.6234),
+                 'Fort_Shaw_Canal': (-111.95927, 47.47231),
+                 'Glasgow_ID': (-106.73192, 48.2698),
+                 'Marshall_Canal': (-113.35616, 46.31922),
+                 'Huntley_Main_Diversion': (-108.1154, 46.0094),
+                 'Paradise_Valley_ID': (-109.1186, 48.5414),
+                 'Ruby_River': (-112.2899, 45.3968),
+                 'Sun_River_project_Below_Pishkun': (-111.91403, 47.70035),
+                 'Two_Dot_Canal': (-110.0588, 46.45903),
+                 'Vigilante_Canal': (-112.0781, 45.3519),
+                 'West_Bench_Canal': (-112.1632, 45.34213),
+                 'Yellowstone_Main_Diversion': (-104.2127, 47.71017)}
 
 I_TYPES = ['P', 'S', 'F']
 YEARS = ['2009', '2010', '2011', '2012', '2013']
@@ -69,9 +88,8 @@ def effective_precip(precip, ref_et):
 def get_polygon_met_parameters(shapes, tables, out_loc):
 
     master = DataFrame()
-
     for table in TABLES:
-        print(table)
+        print('Processing {}'.format(table))
         csv = read_csv(os.path.join(tables, '{}.csv'.format(table)))
 
         shp = os.path.join(shapes, '{}.shp'.format(table))
@@ -86,6 +104,7 @@ def get_polygon_met_parameters(shapes, tables, out_loc):
                                            'Acres_Irr', 'Sq_Meters_Irr', 'Weighted_Mean_ET_mm',
                                            'ET_m3', 'ET_af', 'Crop_Cons_m3',
                                            'Crop_Cons_af', 'pivot', 'sprinkler', 'flood'], index=index)
+
         for yr in YEARS:
             data = [table]
             dt = datetime(int(yr), 12, 31)
@@ -109,6 +128,15 @@ def get_polygon_met_parameters(shapes, tables, out_loc):
             # area params
             acres_tot = csv['Acres'].values.sum()
             sq_m_tot = csv['Sq_Meters'].values.sum()
+
+            try:
+                diff = abs(acres_tot - (sq_m_tot / 4046.86))
+                assert diff < 1.0
+            except AssertionError:
+                print('Area check: {} acres should be {} '
+                      'sq m, actual is {} sq m'.format(acres_tot,
+                                                       acres_tot * 4046.86,
+                                                       sq_m_tot))
             irr_df = csv[csv[irr_key] == 1]
             acres_irr = irr_df['Acres'].values.sum()
             sq_m_irr = irr_df['Sq_Meters'].values.sum()
@@ -128,20 +156,30 @@ def get_polygon_met_parameters(shapes, tables, out_loc):
                 p = irr_df.IType.value_counts()['P'] / float(count)
             except KeyError:
                 p = 0.0
+            except AttributeError:
+                p = 'UNK'
             data.append(p)
+
             try:
                 s = irr_df.IType.value_counts()['S'] / float(count)
             except KeyError:
                 s = 0.0
+            except AttributeError:
+                s = 'UNK'
             data.append(s)
+
             try:
                 f = irr_df.IType.value_counts()['F'] / float(count)
             except KeyError:
                 f = 0.0
+            except AttributeError:
+                f = 'UNK'
             data.append(f)
             df.loc[dt] = data
 
         master = concat([master, df])
+
+    master.to_csv(os.path.join(out_loc, 'OE_Irrigation_Summary_Update.csv'), date_format='%Y')
 
 
 def state_plane_MT_to_WGS(y, x):
@@ -152,11 +190,11 @@ def state_plane_MT_to_WGS(y, x):
 
     return y, x
 
+
 if __name__ == '__main__':
     home = os.path.expanduser('~')
     shapefile = os.path.join(home, 'IrrigationGIS', 'OE_Shapefiles')
     table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports')
-    out_loc = os.path.join(home, 'IrrigationGIS', 'ssebop_summaries')
-    get_polygon_met_parameters(shapefile, table, out_loc)
+    get_polygon_met_parameters(shapefile, table, table)
 
 # ========================= EOF ====================================================================
