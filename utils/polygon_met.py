@@ -67,22 +67,30 @@ def effective_precip(precip, ref_et):
 
 
 def get_polygon_met_parameters(shapes, tables, out_loc):
+
     master = DataFrame()
+
     for table in TABLES:
+        print(table)
         csv = read_csv(os.path.join(tables, '{}.csv'.format(table)))
+
         shp = os.path.join(shapes, '{}.shp'.format(table))
         with fopen(shp) as src:
             for feat in src:
                 coords = feat['geometry']['coordinates'][0][0]
                 lat, lon = state_plane_MT_to_WGS(coords[1], coords[0])
                 break
+
         index = date_range(start='20090101', end='20131231', freq='y')
-        df = DataFrame(data=None, columns=['name', 'ppt', 'eff_ppt', 'etr', 'Acres_Tot',
-                                           'Acres_Irr', 'ET_cm', 'Crop_Cons_cm'], index=index)
-        data = [csv['Ditch_Name'].loc[0]]
+        df = DataFrame(data=None, columns=['name', 'ppt', 'eff_ppt', 'etr', 'Acres_Tot', 'Sq_Meters',
+                                           'Acres_Irr', 'Sq_Meters_Irr', 'Weighted_Mean_ET_mm',
+                                           'ET_m3', 'ET_af', 'Crop_Cons_m3',
+                                           'Crop_Cons_af', 'pivot', 'sprinkler', 'flood'], index=index)
         for yr in YEARS:
+            data = [table]
             dt = datetime(int(yr), 12, 31)
             irr_key = 'Irr_{}'.format(yr)
+            mean_key = 'mean_{}'.format(yr)
             s, e = datetime.strptime(START.format(yr), FMT), datetime.strptime(END.format(yr), FMT)
 
             #  gridmet params
@@ -92,23 +100,48 @@ def get_polygon_met_parameters(shapes, tables, out_loc):
             gridmet = GridMet('etr', start=s, end=e, lat=lat, lon=lon)
             ts_etr = gridmet.get_point_timeseries()
             m_etr = ts_etr.groupby(lambda x: x.month).sum().values
+
+            #  effective precipitation calculation
             eff_ppt = effective_precip(m_ppt, m_etr)
             season_ppt, season_etr, season_eff_ppt = m_ppt.sum(), m_etr.sum(), eff_ppt.sum()
-            data.append([season_ppt, season_eff_ppt, season_etr])
+            [data.append(x) for x in [season_ppt, season_eff_ppt, season_etr]]
 
             # area params
             acres_tot = csv['Acres'].values.sum()
+            sq_m_tot = csv['Sq_Meters'].values.sum()
             irr_df = csv[csv[irr_key] == 1]
-            acres_irr_year = csv['Acres']
-            use irrdf here
-            et_vol_yr = (csv['Sq_Meters']['Irr_{}'.format(yr) == 1] *
-                         csv['mean_{]'.format(yr)]['Irr_{}'.format(yr) == 1]).values.sum() \
-                        / 1000.
-            cc_vol_yr_cm = et_vol_yr - season_eff_ppt
-            data.append(acres_tot, acres_irr_year, et_vol_yr, cc_vol_yr_cm)
+            acres_irr = irr_df['Acres'].values.sum()
+            sq_m_irr = irr_df['Sq_Meters'].values.sum()
+            [data.append(x) for x in [acres_tot, sq_m_tot, acres_irr, sq_m_irr]]
+
+            # irrigation volumes
+            mean_mm = (irr_df[mean_key] * irr_df['Sq_Meters'] / irr_df['Sq_Meters'].values.sum()).values.sum()
+            et_vol_yr_m3 = (irr_df['Sq_Meters'] * irr_df[mean_key] / 1000.).values.sum()
+            et_vol_yr_af = (irr_df['Sq_Meters'] * irr_df[mean_key] / (1000. * 1233.48)).values.sum()
+            cc_vol_yr_cm = (irr_df['Sq_Meters'] * (irr_df[mean_key] - season_eff_ppt) / 1000.).values.sum()
+            cc_vol_yr_af = (irr_df['Sq_Meters'] * (irr_df[mean_key] - season_eff_ppt) / (1000. * 1233.48)).values.sum()
+            [data.append(x) for x in [mean_mm, et_vol_yr_m3, et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
+
+            #  irrigation types
+            count = irr_df[irr_key].values.sum()
+            try:
+                p = irr_df.IType.value_counts()['P'] / float(count)
+            except KeyError:
+                p = 0.0
+            data.append(p)
+            try:
+                s = irr_df.IType.value_counts()['S'] / float(count)
+            except KeyError:
+                s = 0.0
+            data.append(s)
+            try:
+                f = irr_df.IType.value_counts()['F'] / float(count)
+            except KeyError:
+                f = 0.0
+            data.append(f)
             df.loc[dt] = data
 
-        concat([master, df])
+        master = concat([master, df])
 
 
 def state_plane_MT_to_WGS(y, x):
