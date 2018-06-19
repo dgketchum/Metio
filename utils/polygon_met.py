@@ -16,6 +16,7 @@
 
 import os
 from pandas import read_csv, DataFrame, date_range, concat, Series
+from numpy import nan
 from fiona import open as fopen
 from fiona import collection
 from fiona.crs import from_epsg
@@ -237,19 +238,17 @@ def get_gridmet_bias(df, add_to_existing=False, outfile=None):
     if add_to_existing:
         df = read_csv(df, index_col=0)
 
+    df['agrimet_etr'] = nan
     start, end = START.format(df.index[0]), END.format(df.index[-1])
     for key, val in NATURAL_SITES.items():
         print('Agrimet for {}'.format(key))
         lat, lon = val[1], val[0]
-        try:
-            agrimet = Agrimet(lat=lat, lon=lon, start_date=start,
-                              end_date=end, interval='daily')
-            formed = agrimet.fetch_data()
-            agri_etr = formed['ETrs'].values.sum()
-            df[key == 'name']['agrimet_etr'] = agri_etr
+        agrimet = Agrimet(station='drlm', start_date=start,
+                          end_date=end, interval='daily')
+        formed = agrimet.fetch_data()
 
-        except:
-            print('not found')
+        agri_etr = formed['ETRS'].groupby(lambda x: x.year).sum()
+        df[df['name'] == key].agrimet_etr = agri_etr.values.tolist()
 
     if outfile:
         df.to_csv(outfile, date_format='%Y')
