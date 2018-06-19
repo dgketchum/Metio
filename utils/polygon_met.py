@@ -233,18 +233,28 @@ def build_summary_table(shapes, tables, out_loc):
     master.to_csv(os.path.join(out_loc, 'OE_Irrigation_Summary_2.csv'), date_format='%Y')
 
 
-def get_gridmet_bias(df):
-    index = df['Name']
+def get_gridmet_bias(df, add_to_existing=False, outfile=None):
+    if add_to_existing:
+        df = read_csv(df, index_col=0)
 
-    start, end = index[0], index[-1]
+    start, end = START.format(df.index[0]), END.format(df.index[-1])
     for key, val in NATURAL_SITES.items():
-        lat, lon = val[0], val[1]
-        agrimet = Agrimet(lat=lat, lon=lon, start_date=start,
-                          end_date=end, interval='daily')
+        print('Agrimet for {}'.format(key))
+        lat, lon = val[1], val[0]
+        try:
+            agrimet = Agrimet(lat=lat, lon=lon, start_date=start,
+                              end_date=end, interval='daily')
+            formed = agrimet.fetch_data()
+            agri_etr = formed['ETrs'].values.sum()
+            df[key == 'name']['agrimet_etr'] = agri_etr
 
-        formed = agrimet.fetch_data()
-        agri_etr = formed['ETrs'].values.sum()
-        df[key == 'Name']
+        except:
+            print('not found')
+
+    if outfile:
+        df.to_csv(outfile, date_format='%Y')
+    else:
+        return df
 
 
 def state_plane_MT_to_WGS(y, x):
@@ -260,7 +270,10 @@ if __name__ == '__main__':
     home = os.path.expanduser('~')
     shapefile = os.path.join(home, 'IrrigationGIS', 'OE_Shapefiles')
     table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports')
+    existing = os.path.join(table, 'OE_Irrigation_Summary_2.csv')
     # table = os.path.join(home, 'IrrigationGIS', 'ssebop_ancillary')
-    build_summary_table(shapefile, table, table)
+    # build_summary_table(shapefile, table, table)
     # natural_sites_shp(table)
+    get_gridmet_bias(existing, add_to_existing=True, outfile=existing)
+
 # ========================= EOF ====================================================================
