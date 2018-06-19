@@ -15,7 +15,7 @@
 # ===============================================================================
 
 import os
-from pandas import read_csv, DataFrame, date_range, concat
+from pandas import read_csv, DataFrame, date_range, concat, Series
 from fiona import open as fopen
 from fiona import collection
 from fiona.crs import from_epsg
@@ -23,6 +23,7 @@ from pyproj import Proj
 from datetime import datetime
 
 from met.thredds import GridMet
+from met.agrimet import Agrimet
 
 TABLES = ['Broadwater_Missouri_Canal',
           'Broadwater_Missouri_West_Side_Canal',
@@ -41,7 +42,6 @@ TABLES = ['Broadwater_Missouri_Canal',
           'Vigilante_Canal',
           'West_Bench_Canal',
           'Yellowstone_Main_Diversion']
-
 
 NATURAL_SITES = {'Broadwater_Missouri_Canal': (-111.436, 46.330),
                  'Broadwater_Missouri_West_Side_Canal': (-111.52093, 46.19899),
@@ -105,8 +105,29 @@ def effective_precip(precip, ref_et):
     return eff_ppt_mm
 
 
-def build_summary_table(shapes, tables, out_loc):
+def make_tables(root):
+    df = None
+    for t in TABLES:
+        for yr in YEARS:
+            f_name = '{}_{}ee_export.csv'.format(t, yr)
+            new_f_name = '{}.csv'.format(t)
+            csv = os.path.join(root, 'IrrigationGIS', 'ssebop_exports', f_name)
+            new_csv = os.path.join(root, 'IrrigationGIS', 'ssebop_exports', new_f_name)
+            if yr == '2009':
+                df = read_csv(csv)
+                to_drop = ['system:index', 'Shape_Leng', '.geo']
+                df.drop(columns=to_drop, inplace=True)
+                df.rename(columns={'mean': 'mean_{}'.format(yr)}, inplace=True)
+                df.rename(columns={'Shape_Area': 'Sq_Meters'}, inplace=True)
+            else:
+                dummy_df = read_csv(csv)
+                s = Series(dummy_df['mean'], name='mean_{}'.format(yr))
+                df['mean_{}'.format(yr)] = s
+                s = None
+        df.to_csv(new_csv, index_label='ID')
 
+
+def build_summary_table(shapes, tables, out_loc):
     master = DataFrame()
     for table in TABLES:
         print('Processing {}'.format(table))
@@ -146,7 +167,18 @@ def build_summary_table(shapes, tables, out_loc):
             [data.append(x) for x in [season_ppt, season_eff_ppt, season_etr]]
 
             # area params
-            acres_tot = csv['Acres'].values.sum()
+            irr_df = csv[csv[irr_key] == 1]
+            try:
+                acres_tot = csv['Acres'].values.sum()
+                acres_irr = irr_df['Acres'].values.sum()
+            except KeyError:
+                try:
+                    acres_tot = csv['ACRES'].values.sum()
+                    acres_irr = irr_df['ACRES'].values.sum()
+                except KeyError:
+                    acres_tot = csv['acres'].values.sum()
+                    acres_irr = irr_df['acres'].values.sum()
+
             sq_m_tot = csv['Sq_Meters'].values.sum()
 
             try:
@@ -157,8 +189,7 @@ def build_summary_table(shapes, tables, out_loc):
                       'sq m, actual is {} sq m'.format(acres_tot,
                                                        acres_tot * 4046.86,
                                                        sq_m_tot))
-            irr_df = csv[csv[irr_key] == 1]
-            acres_irr = irr_df['Acres'].values.sum()
+
             sq_m_irr = irr_df['Sq_Meters'].values.sum()
             [data.append(x) for x in [acres_tot, sq_m_tot, acres_irr, sq_m_irr]]
 
@@ -199,7 +230,21 @@ def build_summary_table(shapes, tables, out_loc):
 
         master = concat([master, df])
 
-    master.to_csv(os.path.join(out_loc, 'OE_Irrigation_Summary.csv'), date_format='%Y')
+    master.to_csv(os.path.join(out_loc, 'OE_Irrigation_Summary_2.csv'), date_format='%Y')
+
+
+def get_gridmet_bias(df):
+    index = df['Name']
+
+    start, end = index[0], index[-1]
+    for key, val in NATURAL_SITES.items():
+        lat, lon = val[0], val[1]
+        agrimet = Agrimet(lat=lat, lon=lon, start_date=start,
+                          end_date=end, interval='daily')
+
+        formed = agrimet.fetch_data()
+        agri_etr = formed['ETrs'].values.sum()
+        df[key == 'Name']
 
 
 def state_plane_MT_to_WGS(y, x):
