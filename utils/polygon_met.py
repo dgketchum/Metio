@@ -17,6 +17,8 @@
 import os
 from pandas import read_csv, DataFrame, date_range, concat
 from fiona import open as fopen
+from fiona import collection
+from fiona.crs import from_epsg
 from pyproj import Proj
 from datetime import datetime
 
@@ -25,7 +27,6 @@ from met.thredds import GridMet
 TABLES = ['Broadwater_Missouri_Canal',
           'Broadwater_Missouri_West_Side_Canal',
           'Dodson_North_Canal_Diversion',
-          'Dodson_South_Div_To_Bowdoin',
           'East_Fork_Main_Canal_ab_Trout_Creek',
           'Eldorado',
           'Floweree_and_Floweree_Hamilton',
@@ -35,17 +36,16 @@ TABLES = ['Broadwater_Missouri_Canal',
           'Marshall_Canal',
           'Huntley_Main_Diversion',
           'Paradise_Valley_ID',
-          'Ruby_River',
           'Sun_River_project_Below_Pishkun',
           'Two_Dot_Canal',
           'Vigilante_Canal',
-          'West_Bench_-112.0818, 47.5351Canal',
+          'West_Bench_Canal',
           'Yellowstone_Main_Diversion']
+
 
 NATURAL_SITES = {'Broadwater_Missouri_Canal': (-111.436, 46.330),
                  'Broadwater_Missouri_West_Side_Canal': (-111.52093, 46.19899),
                  'Dodson_North_Canal_Diversion': (-108.09676, 48.38433),
-                 'Dodson_South_Div_To_Bowdoin': (-108.00127, 48.33663),
                  'East_Fork_Main_Canal_ab_Trout_Creek': (-113.39298, 46.21571),
                  'Eldorado': (-112.3252, 47.9251),
                  'Floweree_and_Floweree_Hamilton': (-112.0818, 47.5351),
@@ -55,7 +55,6 @@ NATURAL_SITES = {'Broadwater_Missouri_Canal': (-111.436, 46.330),
                  'Marshall_Canal': (-113.35616, 46.31922),
                  'Huntley_Main_Diversion': (-108.1154, 46.0094),
                  'Paradise_Valley_ID': (-109.1186, 48.5414),
-                 'Ruby_River': (-112.2899, 45.3968),
                  'Sun_River_project_Below_Pishkun': (-111.91403, 47.70035),
                  'Two_Dot_Canal': (-110.0588, 46.45903),
                  'Vigilante_Canal': (-112.0781, 45.3519),
@@ -69,6 +68,27 @@ START, END = '{}-04-15', '{}-10-15'
 FMT = '%Y-%m-%d'
 
 D = 3.0
+
+
+def natural_sites_shp(out_loc):
+    agri_schema = {'geometry': 'Point',
+                   'properties': {
+                       'Name': 'str'}}
+
+    shp_driver = 'ESRI Shapefile'
+    epsg = from_epsg(4326)
+
+    with collection(os.path.join(out_loc, 'Natural_Sites.shp'), mode='w',
+                    driver=shp_driver, schema=agri_schema, crs=epsg) as output:
+        for key, val in NATURAL_SITES.items():
+            try:
+                output.write({'geometry': {'type': 'Point',
+                                           'coordinates':
+                                               (val[0], val[1])},
+                              'properties': {
+                                  'Name': key}})
+            except KeyError:
+                pass
 
 
 def effective_precip(precip, ref_et):
@@ -85,7 +105,7 @@ def effective_precip(precip, ref_et):
     return eff_ppt_mm
 
 
-def get_polygon_met_parameters(shapes, tables, out_loc):
+def build_summary_table(shapes, tables, out_loc):
 
     master = DataFrame()
     for table in TABLES:
@@ -179,7 +199,7 @@ def get_polygon_met_parameters(shapes, tables, out_loc):
 
         master = concat([master, df])
 
-    master.to_csv(os.path.join(out_loc, 'OE_Irrigation_Summary_Update.csv'), date_format='%Y')
+    master.to_csv(os.path.join(out_loc, 'OE_Irrigation_Summary.csv'), date_format='%Y')
 
 
 def state_plane_MT_to_WGS(y, x):
@@ -195,6 +215,7 @@ if __name__ == '__main__':
     home = os.path.expanduser('~')
     shapefile = os.path.join(home, 'IrrigationGIS', 'OE_Shapefiles')
     table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports')
-    get_polygon_met_parameters(shapefile, table, table)
-
+    # table = os.path.join(home, 'IrrigationGIS', 'ssebop_ancillary')
+    build_summary_table(shapefile, table, table)
+    # natural_sites_shp(table)
 # ========================= EOF ====================================================================
