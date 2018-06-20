@@ -36,6 +36,8 @@ class TestAgrimet(unittest.TestCase):
         self.outside_PnGp_sites = ['pvan', 'mdki', 'laju']
         self.points_dir = os.path.join(self.root, 'data', 'points')
         self.out_shape = os.path.join(self.root, 'data', 'points', 'agmet_station_write_test.shp')
+        self.test_locations = os.path.join(self.root, 'data', 'points', 'agmet_station_off_location.shp')
+        self.start, self.end = '2015-05-01', '2015-05-05'
 
     def test_instantiate_Agrimet(self):
         """ Test object instantiation.
@@ -65,7 +67,6 @@ class TestAgrimet(unittest.TestCase):
 
         for coord in coords:
             agrimet = Agrimet(lon=coord[0], lat=coord[1])
-
             self.assertTrue(agrimet.station in self.site_ids)
 
     def test_find_image_station(self):
@@ -105,6 +106,17 @@ class TestAgrimet(unittest.TestCase):
         # mph to m sec-1
         self.assertEqual(a[12], b[12] / 0.44704)
 
+    def test_find_sites(self):
+        with fopen(self.test_locations, 'r') as src:
+            for feat in src:
+                lat, lon = feat['geometry']['coordinates'][1], feat['geometry']['coordinates'][0]
+                expected_site = feat['properties']['siteid']
+                #  built in exception fo clover valley, NV neighboring sites
+                if expected_site in ['clon', 'clvn']:
+                    pass
+                agrimet = Agrimet(lat=lat, lon=lon, start_date=self.start, end_date=self.end)
+                found_site = agrimet.station
+                self.assertEqual(expected_site, found_site)
     # def test_fetch_data_many_stations(self):
     #     """ Test download nultiple agrimet station data download.
     #     This runs through a list of stations, reformats data, checks unit conversion,
@@ -152,6 +164,7 @@ class TestAgrimet(unittest.TestCase):
         for f in file_list:
             if 'write_test' in f:
                 os.remove(os.path.join(self.points_dir, f))
+
 
 if __name__ == '__main__':
     unittest.main()
