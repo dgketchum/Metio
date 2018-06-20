@@ -16,7 +16,6 @@
 
 import os
 from pandas import read_csv, DataFrame, date_range, concat, Series
-from numpy import nan
 from fiona import open as fopen
 from fiona import collection
 from fiona.crs import from_epsg
@@ -142,9 +141,9 @@ def build_summary_table(shapes, tables, out_loc):
                 break
 
         index = date_range(start='20090101', end='20131231', freq='y')
-        df = DataFrame(data=None, columns=['name', 'ppt', 'eff_ppt', 'etr', 'Acres_Tot', 'Sq_Meters',
-                                           'Acres_Irr', 'Sq_Meters_Irr', 'Weighted_Mean_ET_mm',
-                                           'ET_m3', 'ET_af', 'Crop_Cons_m3',
+        df = DataFrame(data=None, columns=['name', 'ppt', 'gridmet_etr', 'grimet_eff_ppt', 'agrimet_etr',
+                                           'agrimet_eff_ppt', 'Acres_Tot', 'Sq_Meters', 'Acres_Irr', 'Sq_Meters_Irr',
+                                           'Weighted_Mean_ET_mm', 'ET_m3', 'ET_af', 'Crop_Cons_m3',
                                            'Crop_Cons_af', 'pivot', 'sprinkler', 'flood'], index=index)
 
         for yr in YEARS:
@@ -162,10 +161,18 @@ def build_summary_table(shapes, tables, out_loc):
             ts_etr = gridmet.get_point_timeseries()
             m_etr = ts_etr.groupby(lambda x: x.month).sum().values
 
+            #  agrimet data
+            agrimet = Agrimet(station='drlm', start_date=START.format(yr),
+                              end_date=END.format(yr), interval='daily')
+            formed = agrimet.fetch_data()
+            m_agri_etr = formed['ETRS'].groupby(lambda x: x.month).sum().values
+
             #  effective precipitation calculation
-            eff_ppt = effective_precip(m_ppt, m_etr)
-            season_ppt, season_etr, season_eff_ppt = m_ppt.sum(), m_etr.sum(), eff_ppt.sum()
-            [data.append(x) for x in [season_ppt, season_eff_ppt, season_etr]]
+            gridmet_eff_ppt = effective_precip(m_ppt, m_etr)
+            m_agrimet_eff_ppt = effective_precip(m_ppt, m_agri_etr)
+            season_agri_etr, season_agri_eff_ppt = m_agri_etr.sum(), m_agrimet_eff_ppt.sum()
+            season_ppt, season_etr, season_eff_ppt = m_ppt.sum(), m_etr.sum(), gridmet_eff_ppt.sum()
+            [data.append(x) for x in [season_ppt, season_etr, season_eff_ppt, season_agri_etr, season_agri_eff_ppt]]
 
             # area params
             irr_df = csv[csv[irr_key] == 1]
@@ -234,28 +241,6 @@ def build_summary_table(shapes, tables, out_loc):
     master.to_csv(os.path.join(out_loc, 'OE_Irrigation_Summary_2.csv'), date_format='%Y')
 
 
-def get_gridmet_bias(df, add_to_existing=False, outfile=None):
-    if add_to_existing:
-        df = read_csv(df, index_col=0)
-
-    df['agrimet_etr'] = nan
-    start, end = START.format(df.index[0]), END.format(df.index[-1])
-    for key, val in NATURAL_SITES.items():
-        print('Agrimet for {}'.format(key))
-        lat, lon = val[1], val[0]
-        agrimet = Agrimet(station='drlm', start_date=start,
-                          end_date=end, interval='daily')
-        formed = agrimet.fetch_data()
-
-        agri_etr = formed['ETRS'].groupby(lambda x: x.year).sum()
-        df[df['name'] == key].agrimet_etr = agri_etr.values.tolist()
-
-    if outfile:
-        df.to_csv(outfile, date_format='%Y')
-    else:
-        return df
-
-
 def state_plane_MT_to_WGS(y, x):
     in_proj = Proj(
         '+proj=lcc +lat_1=45 +lat_2=49 +lat_0=44.25 +lon_0=-109.5 +x_0=600000 +y_0=0 '
@@ -271,8 +256,7 @@ if __name__ == '__main__':
     table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports')
     existing = os.path.join(table, 'OE_Irrigation_Summary_2.csv')
     # table = os.path.join(home, 'IrrigationGIS', 'ssebop_ancillary')
-    # build_summary_table(shapefile, table, table)
+    build_summary_table(shapefile, table, table)
     # natural_sites_shp(table)
-    get_gridmet_bias(existing, add_to_existing=True, outfile=existing)
 
 # ========================= EOF ====================================================================
