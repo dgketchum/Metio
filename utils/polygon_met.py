@@ -62,7 +62,7 @@ NATURAL_SITES = {'Broadwater_Missouri_Canal': (-111.436, 46.330),
                  'Yellowstone_Main_Diversion': (-104.2127, 47.71017)}
 
 I_TYPES = ['P', 'S', 'F']
-YEARS = ['2009', '2010', '2011', '2012', '2013']
+YEARS = ['2008', '2009', '2010', '2011', '2012', '2013']
 
 START, END = '{}-04-15', '{}-10-15'
 FMT = '%Y-%m-%d'
@@ -113,7 +113,7 @@ def make_tables(root):
             new_f_name = '{}.csv'.format(t)
             csv = os.path.join(root, 'IrrigationGIS', 'ssebop_exports', f_name)
             new_csv = os.path.join(root, 'IrrigationGIS', 'ssebop_exports', new_f_name)
-            if yr == '2009':
+            if yr == '2008':
                 df = read_csv(csv)
                 to_drop = ['system:index', 'Shape_Leng', '.geo']
                 df.drop(columns=to_drop, inplace=True)
@@ -162,9 +162,15 @@ def build_summary_table(shapes, tables, out_loc):
             m_etr = ts_etr.groupby(lambda x: x.month).sum().values
 
             #  agrimet data
-            agrimet = Agrimet(station='drlm', start_date=START.format(yr),
-                              end_date=END.format(yr), interval='daily')
-            formed = agrimet.fetch_data()
+            try:
+                agrimet = Agrimet(lat=lat, lon=lon, start_date=START.format(yr),
+                                  end_date=END.format(yr), interval='daily')
+                formed = agrimet.fetch_data()
+            except:
+                agrimet = Agrimet(station='drlm', start_date=START.format(yr),
+                                  end_date=END.format(yr), interval='daily')
+                formed = agrimet.fetch_data()
+
             m_agri_etr = formed['ETRS'].groupby(lambda x: x.month).sum().values
 
             #  effective precipitation calculation
@@ -255,7 +261,7 @@ if __name__ == '__main__':
     shapefile = os.path.join(home, 'IrrigationGIS', 'OE_Shapefiles')
     table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports')
     existing = os.path.join(table, 'OE_Irrigation_Summary_2.csv')
-    # table = os.path.join(home, 'IrrigationGIS', 'ssebop_ancillary')
+    # make_tables(home)
     build_summary_table(shapefile, table, table)
     # natural_sites_shp(table)
 

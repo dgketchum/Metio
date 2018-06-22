@@ -21,7 +21,7 @@ from requests.compat import urlencode, OrderedDict
 from datetime import datetime
 from fiona import collection
 from fiona.crs import from_epsg
-from geopy.distance import vincenty
+from geopy.distance import geodesic
 from pandas import read_table, to_datetime, date_range
 
 STATION_INFO_URL = 'https://www.usbr.gov/pn/agrimet/agrimetmap/usbr_map.json'
@@ -121,7 +121,7 @@ class Agrimet(object):
             stn_crds = feat['geometry']['coordinates']
             stn_site_id = feat['properties']['siteid']
             lat_stn, lon_stn = stn_crds[1], stn_crds[0]
-            dist = vincenty((target_lat, target_lon), (lat_stn, lon_stn)).km
+            dist = geodesic((target_lat, target_lon), (lat_stn, lon_stn)).km
             distances[stn_site_id] = dist
         k = min(distances, key=distances.get)
         return k
@@ -132,6 +132,9 @@ class Agrimet(object):
         return stations
 
     def fetch_data(self, return_raw=False, out_csv_file=None):
+        # 'https://www.usbr.gov/pn-bin/agrimet.pl?cbtt=drlm&interval=daily&format=1&back=1266'
+        # 'https://www.usbr.gov/pn-bin/agrimet.pl?cbtt=tosm&interval=daily&format=1&back=3718'
+
         url = '{}?{}'.format(AGRIMET_REQ_SCRIPT, self.params)
         raw_df = read_table(url, skip_blank_lines=True,
                             header=0, sep=r'\,|\t', engine='python')
