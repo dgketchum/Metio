@@ -185,24 +185,29 @@ def build_summary_table(shapes, tables, out_loc):
             try:
                 acres_tot = csv['Acres'].values.sum()
                 acres_irr = irr_df['Acres'].values.sum()
+                area_check = irr_df['Acres'].values
             except KeyError:
                 try:
                     acres_tot = csv['ACRES'].values.sum()
                     acres_irr = irr_df['ACRES'].values.sum()
+                    area_check = irr_df['ACRES'].values
                 except KeyError:
                     acres_tot = csv['acres'].values.sum()
                     acres_irr = irr_df['acres'].values.sum()
+                    area_check = irr_df['acres'].values
 
             sq_m_tot = csv['Sq_Meters'].values.sum()
 
             try:
                 diff = abs(acres_tot - (sq_m_tot / 4046.86))
-                assert diff < 1.0
+                assert diff < 100.
             except AssertionError:
                 print('Area check: {} acres should be {} '
                       'sq m, actual is {} sq m'.format(acres_tot,
                                                        acres_tot * 4046.86,
                                                        sq_m_tot))
+                csv['Sq_Meters'] = area_check
+                sq_m_tot = csv['Sq_Meters'].values * 4046.86
 
             sq_m_irr = irr_df['Sq_Meters'].values.sum()
             [data.append(x) for x in [acres_tot, sq_m_tot, acres_irr, sq_m_irr]]
