@@ -36,7 +36,7 @@ def split_shapefile_by_attribute(vector, attribute, out_loc, crs=4326):
                     schema=meta, crs=from_epsg(crs)) as dst:
             for feat in val:
                 dst.write(feat)
-        break
+        print(new_shape)
 
 
 if __name__ == '__main__':
