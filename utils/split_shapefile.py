@@ -17,24 +17,33 @@
 import os
 
 from fiona import open as fiopen
+from fiona.crs import from_epsg
 
 
-def split_shapefile_by_attribute(vector, attribute):
+def split_shapefile_by_attribute(vector, attribute, out_loc, crs=4326):
     dct = {}
     with fiopen(vector, 'r', driver='ESRI Shapefile') as src:
         for feat in src:
             try:
-                dct['Huc_8'].append(feat)
+                dct[feat['properties'][attribute]].append(feat)
             except KeyError:
-                dct['Huc_8'] = [feat]
-            break
-        print(dct)
+                dct[feat['properties'][attribute]] = [feat]
+        meta = src.schema
+
+    for key, val in dct.items():
+        new_shape = os.path.join(out_loc, 'MT_{}'.format(key))
+        with fiopen(new_shape, 'w', driver='ESRI Shapefile',
+                    schema=meta, crs=from_epsg(crs)) as dst:
+            for feat in val:
+                dst.write(feat)
+        break
 
 
 if __name__ == '__main__':
     home = os.path.expanduser('~')
-    shape = os.path.join(home, 'IrrigationGIS', 'Statewide_Irrigation_Shapefile',
-                         'Statewide_Irrig_07_10_18.shp')
-    split_shapefile_by_attribute(shape, 'huc 8')
+    location = os.path.join(home, 'IrrigationGIS', 'Statewide_Irrigation_Shapefile')
+    in_shape = os.path.join(location, 'Statewide_MTSPCS_32100.shp')
+    out_dir = os.path.join(location, 'by_huc_8')
+    split_shapefile_by_attribute(in_shape, 'Huc_8', out_dir, crs=32100)
     pass
 # ========================= EOF ====================================================================
