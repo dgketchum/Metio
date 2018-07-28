@@ -62,99 +62,99 @@ NATURAL_SITES = {'Broadwater_Missouri_Canal': (-111.436, 46.330),
                  'Yellowstone_Main_Diversion': (-104.2127, 47.71017)}
 
 HUC_TABLES = [
-    'users/dgketchum/irrigation_huc_8/MT_10010002',
-    'users/dgketchum/irrigation_huc_8/MT_10020001',
-    'users/dgketchum/irrigation_huc_8/MT_10020002',
-    'users/dgketchum/irrigation_huc_8/MT_10020003',
-    'users/dgketchum/irrigation_huc_8/MT_10020004',
-    'users/dgketchum/irrigation_huc_8/MT_10020005',
-    'users/dgketchum/irrigation_huc_8/MT_10020006',
-    'users/dgketchum/irrigation_huc_8/MT_10020007',
-    'users/dgketchum/irrigation_huc_8/MT_10020008',
-    'users/dgketchum/irrigation_huc_8/MT_10030101',
-    'users/dgketchum/irrigation_huc_8/MT_10030102',
-    'users/dgketchum/irrigation_huc_8/MT_10030103',
-    'users/dgketchum/irrigation_huc_8/MT_10030104',
-    'users/dgketchum/irrigation_huc_8/MT_10030105',
-    'users/dgketchum/irrigation_huc_8/MT_10030201',
-    'users/dgketchum/irrigation_huc_8/MT_10030202',
-    'users/dgketchum/irrigation_huc_8/MT_10030203',
-    'users/dgketchum/irrigation_huc_8/MT_10030204',
-    'users/dgketchum/irrigation_huc_8/MT_10030205',
-    'users/dgketchum/irrigation_huc_8/MT_10040101',
-    'users/dgketchum/irrigation_huc_8/MT_10040102',
-    'users/dgketchum/irrigation_huc_8/MT_10040103',
-    'users/dgketchum/irrigation_huc_8/MT_10040104',
-    'users/dgketchum/irrigation_huc_8/MT_10040105',
-    'users/dgketchum/irrigation_huc_8/MT_10040106',
-    'users/dgketchum/irrigation_huc_8/MT_10040201',
-    'users/dgketchum/irrigation_huc_8/MT_10040202',
-    'users/dgketchum/irrigation_huc_8/MT_10040203',
-    'users/dgketchum/irrigation_huc_8/MT_10040204',
-    'users/dgketchum/irrigation_huc_8/MT_10040205',
-    'users/dgketchum/irrigation_huc_8/MT_10050001',
-    'users/dgketchum/irrigation_huc_8/MT_10050002',
-    'users/dgketchum/irrigation_huc_8/MT_10050003',
-    'users/dgketchum/irrigation_huc_8/MT_10050004',
-    'users/dgketchum/irrigation_huc_8/MT_10050005',
-    'users/dgketchum/irrigation_huc_8/MT_10050006',
-    'users/dgketchum/irrigation_huc_8/MT_10050007',
-    'users/dgketchum/irrigation_huc_8/MT_10050008',
-    'users/dgketchum/irrigation_huc_8/MT_10050009',
-    'users/dgketchum/irrigation_huc_8/MT_10050010',
-    'users/dgketchum/irrigation_huc_8/MT_10050011',
-    'users/dgketchum/irrigation_huc_8/MT_10050012',
-    'users/dgketchum/irrigation_huc_8/MT_10050013',
-    'users/dgketchum/irrigation_huc_8/MT_10050014',
-    'users/dgketchum/irrigation_huc_8/MT_10050015',
-    'users/dgketchum/irrigation_huc_8/MT_10050016',
-    'users/dgketchum/irrigation_huc_8/MT_10060001',
-    'users/dgketchum/irrigation_huc_8/MT_10060002',
-    'users/dgketchum/irrigation_huc_8/MT_10060003',
-    'users/dgketchum/irrigation_huc_8/MT_10060004',
-    'users/dgketchum/irrigation_huc_8/MT_10060005',
-    'users/dgketchum/irrigation_huc_8/MT_10060006',
-    'users/dgketchum/irrigation_huc_8/MT_10060007',
-    'users/dgketchum/irrigation_huc_8/MT_10070001',
-    'users/dgketchum/irrigation_huc_8/MT_10070002',
-    'users/dgketchum/irrigation_huc_8/MT_10070003',
-    'users/dgketchum/irrigation_huc_8/MT_10070004',
-    'users/dgketchum/irrigation_huc_8/MT_10070005',
-    'users/dgketchum/irrigation_huc_8/MT_10070006',
-    'users/dgketchum/irrigation_huc_8/MT_10070007',
-    'users/dgketchum/irrigation_huc_8/MT_10070008',
-    'users/dgketchum/irrigation_huc_8/MT_10080010',
-    'users/dgketchum/irrigation_huc_8/MT_10080014',
-    'users/dgketchum/irrigation_huc_8/MT_10080015',
-    'users/dgketchum/irrigation_huc_8/MT_10080016',
-    'users/dgketchum/irrigation_huc_8/MT_10090101',
-    'users/dgketchum/irrigation_huc_8/MT_10090102',
-    'users/dgketchum/irrigation_huc_8/MT_10090207',
-    'users/dgketchum/irrigation_huc_8/MT_10090208',
-    'users/dgketchum/irrigation_huc_8/MT_10090209',
-    'users/dgketchum/irrigation_huc_8/MT_10090210',
-    'users/dgketchum/irrigation_huc_8/MT_10100001',
-    'users/dgketchum/irrigation_huc_8/MT_10100002',
-    'users/dgketchum/irrigation_huc_8/MT_10100003',
-    'users/dgketchum/irrigation_huc_8/MT_10100004',
-    'users/dgketchum/irrigation_huc_8/MT_10100005',
-    'users/dgketchum/irrigation_huc_8/MT_10110201',
-    'users/dgketchum/irrigation_huc_8/MT_10110202',
-    'users/dgketchum/irrigation_huc_8/MT_10110204',
-    'users/dgketchum/irrigation_huc_8/MT_17010101',
-    'users/dgketchum/irrigation_huc_8/MT_17010102',
-    'users/dgketchum/irrigation_huc_8/MT_17010104',
-    'users/dgketchum/irrigation_huc_8/MT_17010201',
-    'users/dgketchum/irrigation_huc_8/MT_17010202',
-    'users/dgketchum/irrigation_huc_8/MT_17010203',
-    'users/dgketchum/irrigation_huc_8/MT_17010204',
-    'users/dgketchum/irrigation_huc_8/MT_17010205',
-    'users/dgketchum/irrigation_huc_8/MT_17010206',
-    'users/dgketchum/irrigation_huc_8/MT_17010208',
-    'users/dgketchum/irrigation_huc_8/MT_17010210',
-    'users/dgketchum/irrigation_huc_8/MT_17010211',
-    'users/dgketchum/irrigation_huc_8/MT_17010212',
-    'users/dgketchum/irrigation_huc_8/MT_17010213']
+    'MT_10010002',
+    'MT_10020001',
+    'MT_10020002',
+    'MT_10020003',
+    'MT_10020004',
+    'MT_10020005',
+    'MT_10020006',
+    'MT_10020007',
+    'MT_10020008',
+    'MT_10030101',
+    'MT_10030102',
+    'MT_10030103',
+    'MT_10030104',
+    'MT_10030105',
+    'MT_10030201',
+    'MT_10030202',
+    'MT_10030203',
+    'MT_10030204',
+    'MT_10030205',
+    'MT_10040101',
+    'MT_10040102',
+    'MT_10040103',
+    'MT_10040104',
+    'MT_10040105',
+    'MT_10040106',
+    'MT_10040201',
+    'MT_10040202',
+    'MT_10040203',
+    'MT_10040204',
+    'MT_10040205',
+    'MT_10050001',
+    'MT_10050002',
+    'MT_10050003',
+    'MT_10050004',
+    'MT_10050005',
+    'MT_10050006',
+    'MT_10050007',
+    'MT_10050008',
+    'MT_10050009',
+    'MT_10050010',
+    'MT_10050011',
+    'MT_10050012',
+    'MT_10050013',
+    'MT_10050014',
+    'MT_10050015',
+    'MT_10050016',
+    'MT_10060001',
+    'MT_10060002',
+    'MT_10060003',
+    'MT_10060004',
+    'MT_10060005',
+    'MT_10060006',
+    'MT_10060007',
+    'MT_10070001',
+    'MT_10070002',
+    'MT_10070003',
+    'MT_10070004',
+    'MT_10070005',
+    'MT_10070006',
+    'MT_10070007',
+    'MT_10070008',
+    'MT_10080010',
+    'MT_10080014',
+    'MT_10080015',
+    'MT_10080016',
+    'MT_10090101',
+    'MT_10090102',
+    'MT_10090207',
+    'MT_10090208',
+    'MT_10090209',
+    'MT_10090210',
+    'MT_10100001',
+    'MT_10100002',
+    'MT_10100003',
+    'MT_10100004',
+    'MT_10100005',
+    'MT_10110201',
+    'MT_10110202',
+    'MT_10110204',
+    'MT_17010101',
+    'MT_17010102',
+    'MT_17010104',
+    'MT_17010201',
+    'MT_17010202',
+    'MT_17010203',
+    'MT_17010204',
+    'MT_17010205',
+    'MT_17010206',
+    'MT_17010208',
+    'MT_17010210',
+    'MT_17010211',
+    'MT_17010212',
+    'MT_17010213']
 
 I_TYPES = ['P', 'S', 'F']
 YEARS = ['2008', '2009', '2010', '2011', '2012', '2013']
@@ -200,14 +200,14 @@ def effective_precip(precip, ref_et):
     return eff_ppt_mm
 
 
-def make_tables(root):
+def make_tables(source, root):
     df = None
-    for t in TABLES:
+    for t in source:
         for yr in YEARS:
             f_name = '{}_{}ee_export.csv'.format(t, yr)
             new_f_name = '{}.csv'.format(t)
-            csv = os.path.join(root, 'IrrigationGIS', 'ssebop_exports', f_name)
-            new_csv = os.path.join(root, 'IrrigationGIS', 'ssebop_exports', new_f_name)
+            csv = os.path.join(root, f_name)
+            new_csv = os.path.join(root, new_f_name)
             if yr == '2008':
                 df = read_csv(csv)
                 to_drop = ['system:index', 'Shape_Leng', '.geo']
@@ -222,129 +222,145 @@ def make_tables(root):
         df.to_csv(new_csv, index_label='ID')
 
 
-def build_summary_table(shapes, tables, out_loc):
+def build_summary_table(source, shapes, tables, out_loc, project='oe'):
     master = DataFrame()
-    for table in TABLES:
+    for table in source:
         print('Processing {}'.format(table))
-        csv = read_csv(os.path.join(tables, '{}.csv'.format(table)))
+        try:
+            csv = read_csv(os.path.join(tables, '{}.csv'.format(table)))
 
-        shp = os.path.join(shapes, '{}.shp'.format(table))
-        with fopen(shp) as src:
-            for feat in src:
-                coords = feat['geometry']['coordinates'][0][0]
-                lat, lon = state_plane_MT_to_WGS(coords[1], coords[0])
-                break
+            shp = os.path.join(shapes, '{}.shp'.format(table))
+            with fopen(shp) as src:
+                for feat in src:
+                    coords = feat['geometry']['coordinates'][0][0]
+                    lat, lon = state_plane_MT_to_WGS(coords[1], coords[0])
+                    break
 
-        index = date_range(start='20090101', end='20131231', freq='y')
-        df = DataFrame(data=None, columns=['name', 'ppt', 'gridmet_etr', 'grimet_eff_ppt', 'agrimet_etr',
-                                           'agrimet_eff_ppt', 'Acres_Tot', 'Sq_Meters', 'Acres_Irr', 'Sq_Meters_Irr',
-                                           'Weighted_Mean_ET_mm', 'ET_m3', 'ET_af', 'Crop_Cons_m3',
-                                           'Crop_Cons_af', 'pivot', 'sprinkler', 'flood'], index=index)
+            index = date_range(start='20090101', end='20131231', freq='y')
+            df = DataFrame(data=None, columns=['name', 'ppt', 'gridmet_etr', 'grimet_eff_ppt', 'agrimet_etr',
+                                               'agrimet_eff_ppt', 'Acres_Tot', 'Sq_Meters', 'Acres_Irr',
+                                               'Sq_Meters_Irr',
+                                               'Weighted_Mean_ET_mm', 'ET_m3', 'ET_af', 'Crop_Cons_m3',
+                                               'Crop_Cons_af', 'pivot', 'sprinkler', 'flood'], index=index)
 
-        for yr in YEARS:
-            data = [table]
-            dt = datetime(int(yr), 12, 31)
-            irr_key = 'Irr_{}'.format(yr)
-            mean_key = 'mean_{}'.format(yr)
-            s, e = datetime.strptime(START.format(yr), FMT), datetime.strptime(END.format(yr), FMT)
+            for yr in YEARS:
+                data = [table]
+                dt = datetime(int(yr), 12, 31)
+                irr_key = 'Irr_{}'.format(yr)
+                mean_key = 'mean_{}'.format(yr)
+                s, e = datetime.strptime(START.format(yr), FMT), datetime.strptime(END.format(yr), FMT)
 
-            #  gridmet params
-            gridmet = GridMet('pr', start=s, end=e, lat=lat, lon=lon)
-            ts_ppt = gridmet.get_point_timeseries()
-            m_ppt = ts_ppt.groupby(lambda x: x.month).sum().values
-            gridmet = GridMet('etr', start=s, end=e, lat=lat, lon=lon)
-            ts_etr = gridmet.get_point_timeseries()
-            m_etr = ts_etr.groupby(lambda x: x.month).sum().values
+                #  gridmet params
+                gridmet = GridMet('pr', start=s, end=e, lat=lat, lon=lon)
+                ts_ppt = gridmet.get_point_timeseries()
+                m_ppt = ts_ppt.groupby(lambda x: x.month).sum().values
+                gridmet = GridMet('etr', start=s, end=e, lat=lat, lon=lon)
+                ts_etr = gridmet.get_point_timeseries()
+                m_etr = ts_etr.groupby(lambda x: x.month).sum().values
 
-            #  agrimet data
-            try:
-                agrimet = Agrimet(lat=lat, lon=lon, start_date=START.format(yr),
-                                  end_date=END.format(yr), interval='daily')
-                formed = agrimet.fetch_data()
-            except:
-                agrimet = Agrimet(station='drlm', start_date=START.format(yr),
-                                  end_date=END.format(yr), interval='daily')
-                formed = agrimet.fetch_data()
-
-            m_agri_etr = formed['ETRS'].groupby(lambda x: x.month).sum().values
-
-            #  effective precipitation calculation
-            gridmet_eff_ppt = effective_precip(m_ppt, m_etr)
-            m_agrimet_eff_ppt = effective_precip(m_ppt, m_agri_etr)
-            season_agri_etr, season_agri_eff_ppt = m_agri_etr.sum(), m_agrimet_eff_ppt.sum()
-            season_ppt, season_etr, season_eff_ppt = m_ppt.sum(), m_etr.sum(), gridmet_eff_ppt.sum()
-            [data.append(x) for x in [season_ppt, season_etr, season_eff_ppt, season_agri_etr, season_agri_eff_ppt]]
-
-            # area params
-            irr_df = csv[csv[irr_key] == 1]
-            try:
-                acres_tot = csv['Acres'].values.sum()
-                acres_irr = irr_df['Acres'].values.sum()
-                area_check = irr_df['Acres'].values
-            except KeyError:
+                #  agrimet data
                 try:
+                    agrimet = Agrimet(lat=lat, lon=lon, start_date=START.format(yr),
+                                      end_date=END.format(yr), interval='daily')
+                    formed = agrimet.fetch_data()
+                except:
+                    agrimet = Agrimet(station='drlm', start_date=START.format(yr),
+                                      end_date=END.format(yr), interval='daily')
+                    formed = agrimet.fetch_data()
+
+                m_agri_etr = formed['ETRS'].groupby(lambda x: x.month).sum().values
+
+                #  effective precipitation calculation
+                gridmet_eff_ppt = effective_precip(m_ppt, m_etr)
+                m_agrimet_eff_ppt = effective_precip(m_ppt, m_agri_etr)
+                season_agri_etr, season_agri_eff_ppt = m_agri_etr.sum(), m_agrimet_eff_ppt.sum()
+                season_ppt, season_etr, season_eff_ppt = m_ppt.sum(), m_etr.sum(), gridmet_eff_ppt.sum()
+                [data.append(x) for x in [season_ppt, season_etr, season_eff_ppt, season_agri_etr, season_agri_eff_ppt]]
+
+                # area params
+                if project == 'oe':
+                    irr_df = csv[csv[irr_key] == 1]
+                    try:
+                        acres_tot = csv['Acres'].values.sum()
+                        acres_irr = irr_df['Acres'].values.sum()
+                        area_check = irr_df['Acres'].values
+                    except KeyError:
+                        try:
+                            acres_tot = csv['ACRES'].values.sum()
+                            acres_irr = irr_df['ACRES'].values.sum()
+                            area_check = irr_df['ACRES'].values
+                        except KeyError:
+                            acres_tot = csv['acres'].values.sum()
+                            acres_irr = irr_df['acres'].values.sum()
+                            area_check = irr_df['acres'].values
+                    sq_m_tot = csv['Sq_Meters'].values.sum()
+
+                elif project == 'huc':
                     acres_tot = csv['ACRES'].values.sum()
-                    acres_irr = irr_df['ACRES'].values.sum()
-                    area_check = irr_df['ACRES'].values
+                    acres_irr = acres_tot
+                    area_check = csv['ACRES'].values * 4046.86
+                    sq_m_tot = csv['Sq_Meters'].values.sum()
+
+                else:
+                    raise ValueError('Pick a valid project type.')
+
+                try:
+                    diff = abs(acres_tot - (sq_m_tot / 4046.86))
+                    assert diff < 100.
+                except AssertionError:
+                    print('Area check: {} acres should be {} '
+                          'sq m, actual is {} sq m'.format(acres_tot,
+                                                           acres_tot * 4046.86,
+                                                           sq_m_tot))
+                    csv['Sq_Meters'] = area_check
+                    sq_m_tot = csv['Sq_Meters'].values * 4046.86
+
+                sq_m_irr = irr_df['Sq_Meters'].values.sum()
+
+                [data.append(x) for x in [acres_tot, sq_m_tot, acres_irr, sq_m_irr]]
+
+                # irrigation volumes
+                mean_mm = (irr_df[mean_key] * irr_df['Sq_Meters'] / irr_df['Sq_Meters'].values.sum()).values.sum()
+                et_vol_yr_m3 = (irr_df['Sq_Meters'] * irr_df[mean_key] / 1000.).values.sum()
+                et_vol_yr_af = (irr_df['Sq_Meters'] * irr_df[mean_key] / (1000. * 1233.48)).values.sum()
+                cc_vol_yr_cm = (irr_df['Sq_Meters'] * (irr_df[mean_key] - season_eff_ppt) / 1000.).values.sum()
+                cc_vol_yr_af = (
+                        irr_df['Sq_Meters'] * (irr_df[mean_key] - season_eff_ppt) / (1000. * 1233.48)).values.sum()
+                [data.append(x) for x in [mean_mm, et_vol_yr_m3, et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
+
+                #  irrigation types
+                count = irr_df[irr_key].values.sum()
+                try:
+                    p = irr_df.IType.value_counts()['P'] / float(count)
                 except KeyError:
-                    acres_tot = csv['acres'].values.sum()
-                    acres_irr = irr_df['acres'].values.sum()
-                    area_check = irr_df['acres'].values
+                    p = 0.0
+                except AttributeError:
+                    p = 'UNK'
+                data.append(p)
 
-            sq_m_tot = csv['Sq_Meters'].values.sum()
+                try:
+                    s = irr_df.IType.value_counts()['S'] / float(count)
+                except KeyError:
+                    s = 0.0
+                except AttributeError:
+                    s = 'UNK'
+                data.append(s)
 
-            try:
-                diff = abs(acres_tot - (sq_m_tot / 4046.86))
-                assert diff < 100.
-            except AssertionError:
-                print('Area check: {} acres should be {} '
-                      'sq m, actual is {} sq m'.format(acres_tot,
-                                                       acres_tot * 4046.86,
-                                                       sq_m_tot))
-                csv['Sq_Meters'] = area_check
-                sq_m_tot = csv['Sq_Meters'].values * 4046.86
+                try:
+                    f = irr_df.IType.value_counts()['F'] / float(count)
+                except KeyError:
+                    f = 0.0
+                except AttributeError:
+                    f = 'UNK'
+                data.append(f)
+                df.loc[dt] = data
 
-            sq_m_irr = irr_df['Sq_Meters'].values.sum()
-            [data.append(x) for x in [acres_tot, sq_m_tot, acres_irr, sq_m_irr]]
+            master = concat([master, df])
 
-            # irrigation volumes
-            mean_mm = (irr_df[mean_key] * irr_df['Sq_Meters'] / irr_df['Sq_Meters'].values.sum()).values.sum()
-            et_vol_yr_m3 = (irr_df['Sq_Meters'] * irr_df[mean_key] / 1000.).values.sum()
-            et_vol_yr_af = (irr_df['Sq_Meters'] * irr_df[mean_key] / (1000. * 1233.48)).values.sum()
-            cc_vol_yr_cm = (irr_df['Sq_Meters'] * (irr_df[mean_key] - season_eff_ppt) / 1000.).values.sum()
-            cc_vol_yr_af = (irr_df['Sq_Meters'] * (irr_df[mean_key] - season_eff_ppt) / (1000. * 1233.48)).values.sum()
-            [data.append(x) for x in [mean_mm, et_vol_yr_m3, et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
+        except FileNotFoundError:
+            pass
 
-            #  irrigation types
-            count = irr_df[irr_key].values.sum()
-            try:
-                p = irr_df.IType.value_counts()['P'] / float(count)
-            except KeyError:
-                p = 0.0
-            except AttributeError:
-                p = 'UNK'
-            data.append(p)
-
-            try:
-                s = irr_df.IType.value_counts()['S'] / float(count)
-            except KeyError:
-                s = 0.0
-            except AttributeError:
-                s = 'UNK'
-            data.append(s)
-
-            try:
-                f = irr_df.IType.value_counts()['F'] / float(count)
-            except KeyError:
-                f = 0.0
-            except AttributeError:
-                f = 'UNK'
-            data.append(f)
-            df.loc[dt] = data
-
-        master = concat([master, df])
-
-    master.to_csv(os.path.join(out_loc, 'OE_Irrigation_Summary_2.csv'), date_format='%Y')
+    master.to_csv(os.path.join(out_loc, 'Irrigation_HUC8.csv'), date_format='%Y')
 
 
 def state_plane_MT_to_WGS(y, x):
@@ -358,11 +374,11 @@ def state_plane_MT_to_WGS(y, x):
 
 if __name__ == '__main__':
     home = os.path.expanduser('~')
-    shapefile = os.path.join(home, 'IrrigationGIS', 'OE_Shapefiles')
-    table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports')
-    existing = os.path.join(table, 'OE_Irrigation_Summary_2.csv')
-    # make_tables(home)
-    build_summary_table(shapefile, table, table)
+    shapefile = os.path.join(home, 'IrrigationGIS', 'Statewide_Irrigation_Shapefile', 'by_huc_8')
+    table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports', 'statewide')
+    # existing = os.path.join(table, 'OE_Irrigation_Summary_2.csv')
+    # make_tables(HUC_TABLES, table)
+    build_summary_table(HUC_TABLES, shapefile, table, out_loc=table, project='oe')
     # natural_sites_shp(table)
 
 # ========================= EOF ====================================================================
