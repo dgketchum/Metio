@@ -231,8 +231,11 @@ def build_summary_table(source, shapes, tables, out_loc, project='oe'):
 
             shp = os.path.join(shapes, '{}.shp'.format(table))
             with fopen(shp) as src:
+                # .shp files should be in epsg: 102300
                 for feat in src:
                     coords = feat['geometry']['coordinates'][0][0]
+                    if len(coords) > 2:
+                        coords = coords[0]
                     lat, lon = state_plane_MT_to_WGS(coords[1], coords[0])
                     break
 
@@ -240,7 +243,7 @@ def build_summary_table(source, shapes, tables, out_loc, project='oe'):
             df = DataFrame(data=None, columns=['name', 'ppt', 'gridmet_etr', 'grimet_eff_ppt', 'agrimet_etr',
                                                'agrimet_eff_ppt', 'Acres_Tot', 'Sq_Meters', 'Acres_Irr',
                                                'Sq_Meters_Irr',
-                                               'Weighted_Mean_ET_mm', 'ET_m3', 'ET_af', 'Crop_Cons_m3',
+                                               'Weighted_Mean_ET_mm', 'Crop_Cons_mm','ET_m3', 'ET_af', 'Crop_Cons_m3',
                                                'Crop_Cons_af', 'pivot', 'sprinkler', 'flood'], index=index)
 
             for yr in YEARS:
@@ -275,7 +278,8 @@ def build_summary_table(source, shapes, tables, out_loc, project='oe'):
                 m_agrimet_eff_ppt = effective_precip(m_ppt, m_agri_etr)
                 season_agri_etr, season_agri_eff_ppt = m_agri_etr.sum(), m_agrimet_eff_ppt.sum()
                 season_ppt, season_etr, season_eff_ppt = m_ppt.sum(), m_etr.sum(), gridmet_eff_ppt.sum()
-                [data.append(x) for x in [season_ppt, season_etr, season_eff_ppt, season_agri_etr, season_agri_eff_ppt]]
+                [data.append(x) for x in [season_ppt, season_etr, season_eff_ppt,
+                                          season_agri_etr, season_agri_eff_ppt]]
 
                 # area params
                 if project == 'oe':
@@ -293,13 +297,93 @@ def build_summary_table(source, shapes, tables, out_loc, project='oe'):
                             acres_tot = csv['acres'].values.sum()
                             acres_irr = irr_df['acres'].values.sum()
                             area_check = irr_df['acres'].values
+                    sq_m_irr = irr_df['Sq_Meters'].values.sum()
                     sq_m_tot = csv['Sq_Meters'].values.sum()
+                    [data.append(x) for x in [acres_tot, sq_m_tot, acres_irr, sq_m_irr]]
+
+                    # irrigation volumes
+                    mean_mm = (csv[mean_key] * csv['Sq_Meters'] / csv['Sq_Meters'].values.sum()).values.sum()
+                    cc_mean_mm = mean_mm - season_eff_ppt
+                    et_vol_yr_m3 = (irr_df['Sq_Meters'] * irr_df[mean_key] / 1000.).values.sum()
+                    et_vol_yr_af = (irr_df['Sq_Meters'] * irr_df[mean_key] / (1000. * 1233.48)).values.sum()
+                    cc_vol_yr_cm = (irr_df['Sq_Meters'] * (irr_df[mean_key] - season_eff_ppt) / 1000.).values.sum()
+                    cc_vol_yr_af = (
+                            irr_df['Sq_Meters'] * (irr_df[mean_key] - season_eff_ppt) / (1000. * 1233.48)).values.sum()
+                    [data.append(x) for x in [mean_mm, cc_mean_mm, et_vol_yr_m3,
+                                              et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
+
+                    #  irrigation types
+                    count = irr_df[irr_key].values.sum()
+                    try:
+                        p = irr_df.IType.value_counts()['P'] / float(count)
+                    except KeyError:
+                        p = 0.0
+                    except AttributeError:
+                        p = 'UNK'
+                    data.append(p)
+
+                    try:
+                        s = irr_df.IType.value_counts()['S'] / float(count)
+                    except KeyError:
+                        s = 0.0
+                    except AttributeError:
+                        s = 'UNK'
+                    data.append(s)
+
+                    try:
+                        f = irr_df.IType.value_counts()['F'] / float(count)
+                    except KeyError:
+                        f = 0.0
+                    except AttributeError:
+                        f = 'UNK'
+                    data.append(f)
+                    df.loc[dt] = data
 
                 elif project == 'huc':
                     acres_tot = csv['ACRES'].values.sum()
                     acres_irr = acres_tot
                     area_check = csv['ACRES'].values * 4046.86
                     sq_m_tot = csv['Sq_Meters'].values.sum()
+                    sq_m_irr = sq_m_tot
+                    [data.append(x) for x in [acres_tot, sq_m_tot, acres_irr, sq_m_irr]]
+
+                    # irrigation volumes
+                    mean_mm = (csv[mean_key] * csv['Sq_Meters'] / csv['Sq_Meters'].values.sum()).values.sum()
+                    cc_mean_mm = mean_mm - season_eff_ppt
+                    et_vol_yr_m3 = (csv['Sq_Meters'] * csv[mean_key] / 1000.).values.sum()
+                    et_vol_yr_af = (csv['Sq_Meters'] * csv[mean_key] / (1000. * 1233.48)).values.sum()
+                    cc_vol_yr_cm = (csv['Sq_Meters'] * (csv[mean_key] - season_eff_ppt) / 1000.).values.sum()
+                    cc_vol_yr_af = (
+                            csv['Sq_Meters'] * (csv[mean_key] - season_eff_ppt) / (1000. * 1233.48)).values.sum()
+                    [data.append(x) for x in [mean_mm, cc_mean_mm, et_vol_yr_m3,
+                                              et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
+
+                    #  irrigation types
+                    count = csv.shape[0]
+                    try:
+                        p = csv.IType.value_counts()['P'] / float(count)
+                    except KeyError:
+                        p = 0.0
+                    except AttributeError:
+                        p = 'UNK'
+                    data.append(p)
+
+                    try:
+                        s = csv.IType.value_counts()['S'] / float(count)
+                    except KeyError:
+                        s = 0.0
+                    except AttributeError:
+                        s = 'UNK'
+                    data.append(s)
+
+                    try:
+                        f = csv.IType.value_counts()['F'] / float(count)
+                    except KeyError:
+                        f = 0.0
+                    except AttributeError:
+                        f = 'UNK'
+                    data.append(f)
+                    df.loc[dt] = data
 
                 else:
                     raise ValueError('Pick a valid project type.')
@@ -312,48 +396,6 @@ def build_summary_table(source, shapes, tables, out_loc, project='oe'):
                           'sq m, actual is {} sq m'.format(acres_tot,
                                                            acres_tot * 4046.86,
                                                            sq_m_tot))
-                    csv['Sq_Meters'] = area_check
-                    sq_m_tot = csv['Sq_Meters'].values * 4046.86
-
-                sq_m_irr = irr_df['Sq_Meters'].values.sum()
-
-                [data.append(x) for x in [acres_tot, sq_m_tot, acres_irr, sq_m_irr]]
-
-                # irrigation volumes
-                mean_mm = (irr_df[mean_key] * irr_df['Sq_Meters'] / irr_df['Sq_Meters'].values.sum()).values.sum()
-                et_vol_yr_m3 = (irr_df['Sq_Meters'] * irr_df[mean_key] / 1000.).values.sum()
-                et_vol_yr_af = (irr_df['Sq_Meters'] * irr_df[mean_key] / (1000. * 1233.48)).values.sum()
-                cc_vol_yr_cm = (irr_df['Sq_Meters'] * (irr_df[mean_key] - season_eff_ppt) / 1000.).values.sum()
-                cc_vol_yr_af = (
-                        irr_df['Sq_Meters'] * (irr_df[mean_key] - season_eff_ppt) / (1000. * 1233.48)).values.sum()
-                [data.append(x) for x in [mean_mm, et_vol_yr_m3, et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
-
-                #  irrigation types
-                count = irr_df[irr_key].values.sum()
-                try:
-                    p = irr_df.IType.value_counts()['P'] / float(count)
-                except KeyError:
-                    p = 0.0
-                except AttributeError:
-                    p = 'UNK'
-                data.append(p)
-
-                try:
-                    s = irr_df.IType.value_counts()['S'] / float(count)
-                except KeyError:
-                    s = 0.0
-                except AttributeError:
-                    s = 'UNK'
-                data.append(s)
-
-                try:
-                    f = irr_df.IType.value_counts()['F'] / float(count)
-                except KeyError:
-                    f = 0.0
-                except AttributeError:
-                    f = 'UNK'
-                data.append(f)
-                df.loc[dt] = data
 
             master = concat([master, df])
 
@@ -361,7 +403,6 @@ def build_summary_table(source, shapes, tables, out_loc, project='oe'):
             pass
 
     master.to_csv(os.path.join(out_loc, 'Irrigation_HUC8.csv'), date_format='%Y')
-
 
 def state_plane_MT_to_WGS(y, x):
     in_proj = Proj(
@@ -378,7 +419,7 @@ if __name__ == '__main__':
     table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports', 'statewide')
     # existing = os.path.join(table, 'OE_Irrigation_Summary_2.csv')
     # make_tables(HUC_TABLES, table)
-    build_summary_table(HUC_TABLES, shapefile, table, out_loc=table, project='oe')
+    build_summary_table(HUC_TABLES, shapefile, table, out_loc=table, project='huc')
     # natural_sites_shp(table)
 
 # ========================= EOF ====================================================================
