@@ -250,46 +250,6 @@ def get_agrimet(lat, lon, yr, param='ETRS'):
         return formed
 
 
-def build_county_table(source, shapes, tables, out_loc):
-    index = date_range(start='20080101', end='20131231', freq='y')
-    # df = DataFrame(data=None, columns=['county', 'ppt', 'gridmet_etr', 'grimet_eff_ppt', 'agrimet_etr',
-    #                                    'agrimet_eff_ppt', 'Acres_Tot', 'Sq_Meters', 'Acres_Irr',
-    #                                    'Sq_Meters_Irr',
-    #                                    'Weighted_Mean_ET_mm', 'Crop_Cons_mm', 'ET_m3', 'ET_af',
-    #                                    'Crop_Cons_m3',
-    #                                    'Crop_Cons_af', 'pivot', 'sprinkler', 'flood'], index=index)
-    df = DataFrame()
-    first = True
-    for table in source:
-        print('Processing {}'.format(table))
-        try:
-            csv = read_csv(os.path.join(tables, '{}.csv'.format(table)))
-
-            shp = os.path.join(shapes, '{}.shp'.format(table))
-            with fopen(shp) as src:
-                # .shp files should be in epsg: 102300
-                for feat in src:
-                    coords = feat['geometry']['coordinates'][0][0]
-                    if len(coords) > 2:
-                        coords = coords[0]
-                    lat, lon = state_plane_MT_to_WGS(coords[1], coords[0])
-                    break
-
-            if first:
-                df = csv
-                first = False
-            else:
-                df = concat([df, csv])
-
-        except FileNotFoundError:
-            pass
-
-    for yr in YEARS:
-        key = 'mean_{}'.format(yr)
-        # find components of weighted mean
-    cnt = df.groupby('CNT').agg({'ACRES': 'sum', 'Sq_Meters': 'sum',})
-
-
 def count_irrigation_types(csv, data):
     count = csv.shape[0]
     try:
@@ -475,7 +435,7 @@ if __name__ == '__main__':
     table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports', 'statewide')
     # existing = os.path.join(table, 'OE_Irrigation_Summary_2.csv')
     # make_tables(HUC_TABLES, table)
-    build_county_table(HUC_TABLES, shapefile, table, out_loc=table)
+    # build_county_table(HUC_TABLES, shapefile, table, out_loc=table)
     # natural_sites_shp(table)
 
 # ========================= EOF ====================================================================

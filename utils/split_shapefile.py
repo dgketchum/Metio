@@ -43,7 +43,7 @@ if __name__ == '__main__':
     home = os.path.expanduser('~')
     location = os.path.join(home, 'IrrigationGIS', 'Statewide_Irrigation_Shapefile')
     in_shape = os.path.join(location, 'Statewide_MTSPCS_32100.shp')
-    out_dir = os.path.join(location, 'by_huc_8')
-    split_shapefile_by_attribute(in_shape, 'Huc_8', out_dir, crs=32100)
+    out_dir = os.path.join(location, 'by_county')
+    split_shapefile_by_attribute(in_shape, 'CNT', out_dir, crs=32100)
     pass
 # ========================= EOF ====================================================================
