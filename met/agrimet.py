@@ -25,7 +25,8 @@ from geopy.distance import geodesic
 from pandas import read_table, to_datetime, date_range
 
 STATION_INFO_URL = 'https://www.usbr.gov/pn/agrimet/agrimetmap/usbr_map.json'
-AGRIMET_REQ_SCRIPT = 'https://www.usbr.gov/pn-bin/agrimet.pl'
+AGRIMET_MET_REQ_SCRIPT = 'https://www.usbr.gov/pn-bin/agrimet.pl'
+AGRIMET_CROP_REQ_SCRIPT = 'https://www.usbr.gov/pn/agrimet/chart/{}{}et.txt'
 # in km
 EARTH_RADIUS = 6371.
 
@@ -110,10 +111,10 @@ class Agrimet(object):
 
     def find_closest_station(self, target_lat, target_lon):
         """ The two-argument inverse tangent function.
-        :param station_data: 
-        :param target_lat: 
-        :param target_lon: 
-        :return: 
+        :param station_data:
+        :param target_lat:
+        :param target_lon:
+        :return:
         """
         distances = {}
         station_data = self.load_stations()
@@ -131,11 +132,23 @@ class Agrimet(object):
         stations = json.loads(r.text)
         return stations
 
-    def fetch_data(self, return_raw=False, out_csv_file=None):
+    def fetch_data(self, return_raw=False, out_csv_file=None, data_class='met'):
+
+        # meteorology data
         # 'https://www.usbr.gov/pn-bin/agrimet.pl?cbtt=drlm&interval=daily&format=1&back=1266'
         # 'https://www.usbr.gov/pn-bin/agrimet.pl?cbtt=tosm&interval=daily&format=1&back=3718'
 
-        url = '{}?{}'.format(AGRIMET_REQ_SCRIPT, self.params)
+        # crop water use data
+        # 'https://www.usbr.gov/pn/agrimet/chart/drpw17et.txt'
+
+        if data_class == 'met':
+            url = '{}?{}'.format(AGRIMET_MET_REQ_SCRIPT, self.params)
+        elif data_class == 'crop':
+            if not self.start.year == self.end.year:
+                raise ValueError('Must choose one year for crop water use reports.')
+            two_dig_yr = str(self.start.year)[-2:]
+            url = AGRIMET_CROP_REQ_SCRIPT.format(self.station, two_dig_yr)
+
         raw_df = read_table(url, skip_blank_lines=True,
                             header=0, sep=r'\,|\t', engine='python')
         raw_df.index = date_range(self.start, periods=raw_df.shape[0])
