@@ -156,6 +156,122 @@ HUC_TABLES = [
     'MT_17010212',
     'MT_17010213']
 
+COUNTIES = ['BE',
+            'BH',
+            'BL',
+            'BR',
+            'CA',
+            'CH',
+            'CR',
+            'CS',
+            'CU',
+            'DA',
+            'DL',
+            'DW',
+            'FA',
+            'FE',
+            'FL',
+            'GA',
+            'GF',
+            'GL',
+            'GR',
+            'GV',
+            'HI',
+            'JB',
+            'JE',
+            'LA',
+            'LC',
+            'LI',
+            'LN',
+            'MA',
+            'MC',
+            'ME',
+            'MI',
+            'MS',
+            'MU',
+            'PA',
+            'PE',
+            'PH',
+            'PI',
+            'PO',
+            'PR',
+            'PW',
+            'RA',
+            'RI',
+            'RO',
+            'RS',
+            'SA',
+            'SB',
+            'SG',
+            'SH',
+            'ST',
+            'TE',
+            'TO',
+            'TR',
+            'VA',
+            'WH',
+            'WI',
+            'YE'
+            ]
+
+COUNTY_KEY = {
+    'CA': 'CARBON',
+    'PR': 'POWDER_RIVER',
+    'MA': 'MADISON',
+    'BE': 'BEAVERHEAD',
+    'BH': 'BIG_HORN',
+    'ST': 'STILLWATER',
+    'PA': 'PARK',
+    'GA': 'GALLATIN',
+    'SG': 'SWEET_GRASS',
+    'SB': 'SILVER_BOW',
+    'CR': 'CARTER',
+    'DL': 'DEER_LODGE',
+    'TR': 'TREASURE',
+    'YE': 'YELLOWSTONE',
+    'JE': 'JEFFERSON',
+    'GV': 'GOLDEN_VALLEY',
+    'WH': 'WHEATLAND',
+    'RA': 'RAVALLI',
+    'MU': 'MUSSELSHELL',
+    'FA': 'FALLON',
+    'BR': 'BROADWATER',
+    'RS': 'ROSEBUD',
+    'GR': 'GRANITE',
+    'CU': 'CUSTER',
+    'ME': 'MEAGHER',
+    'PI': 'PRAIRIE',
+    'JB': 'JUDITH_BASIN',
+    'WI': 'WIBAUX',
+    'PE': 'PETROLEUM',
+    'MI': 'MINERAL',
+    'PW': 'POWELL',
+    'MS': 'MISSOULA',
+    'CS': 'CASCADE',
+    'FE': 'FERGUS',
+    'DW': 'DAWSON',
+    'LC': 'LEWIS & CLARK',
+    'GF': 'GARFIELD',
+    'LA': 'LAKE',
+    'MC': 'MCCONE',
+    'TE': 'TETON',
+    'RI': 'RICHLAND',
+    'CH': 'CHOUTEAU',
+    'SA': 'SANDERS',
+    'PO': 'PONDERA',
+    'RO': 'ROOSEVELT',
+    'HI': 'HILL',
+    'BL': 'BLAINE',
+    'LI': 'LIBERTY',
+    'PH': 'PHILLIPS',
+    'TO': 'TOOLE',
+    'VA': 'VALLEY',
+    'DA': 'DANIELS',
+    'GL': 'GLACIER',
+    'FL': 'FLATHEAD',
+    'SH': 'SHERIDAN',
+    'LN': 'LINCOLN', }
+
 I_TYPES = ['P', 'S', 'F']
 YEARS = ['2008', '2009', '2010', '2011', '2012', '2013']
 
@@ -237,17 +353,17 @@ def get_agrimet(lat, lon, yr, param='ETRS'):
     try:
         agrimet = Agrimet(lat=lat, lon=lon, start_date=START.format(yr),
                           end_date=END.format(yr), interval='daily')
-        formed = agrimet.fetch_data()
     except:
         agrimet = Agrimet(station='drlm', start_date=START.format(yr),
                           end_date=END.format(yr), interval='daily')
-        formed = agrimet.fetch_data()
 
     if param == 'ETRS':
+        formed = agrimet.fetch_data(data_class='met')
         agri_etr = formed[param].groupby(lambda x: x.month).sum().values
         return agri_etr
-    else:
-        return formed
+    if param == 'crop':
+        formed = agrimet.fetch_data(data_class=param)
+    return formed
 
 
 def count_irrigation_types(csv, data):
@@ -258,7 +374,7 @@ def count_irrigation_types(csv, data):
         p = 0.0
     except AttributeError:
         p = 'UNK'
-        data.append(p)
+    data.append(p)
 
     try:
         s = csv.IType.value_counts()['S'] / float(count)
@@ -266,7 +382,7 @@ def count_irrigation_types(csv, data):
         s = 0.0
     except AttributeError:
         s = 'UNK'
-        data.append(s)
+    data.append(s)
 
     try:
         f = csv.IType.value_counts()['F'] / float(count)
@@ -274,12 +390,12 @@ def count_irrigation_types(csv, data):
         f = 0.0
     except AttributeError:
         f = 'UNK'
-        data.append(f)
+    data.append(f)
 
     return data
 
 
-def build_summary_project_table(source, shapes, tables, out_loc, project='oe'):
+def build_summary_table(source, shapes, tables, out_loc, project='oe'):
     master = DataFrame()
     lat, lon = None, None
     for table in source:
@@ -298,7 +414,11 @@ def build_summary_project_table(source, shapes, tables, out_loc, project='oe'):
                     break
 
             for yr in YEARS:
-                data = [table]
+                if project == 'co':
+                    data = [COUNTY_KEY[table], table]
+                else:
+                    data = [table]
+
                 s, e = datetime.strptime(START.format(yr), FMT), datetime.strptime(END.format(yr), FMT)
                 m_ppt, m_etr = get_gridmet(s, e, lat, lon)
                 m_agri_etr = get_agrimet(lat, lon, yr, param='ETRS')
@@ -314,15 +434,61 @@ def build_summary_project_table(source, shapes, tables, out_loc, project='oe'):
 
                 elif project == 'huc':
                     df = huc_project_summary(yr, csv, season_eff_ppt, data)
+
+                elif project == 'co':
+                    df = county_project_summary(yr, csv, season_eff_ppt, data)
+
                 else:
                     Exception('Choose a valid project type.')
 
             master = concat([master, df])
 
         except FileNotFoundError:
-            pass
+            print('{} not found'.format(table))
 
-    master.to_csv(os.path.join(out_loc, 'Irrigation_HUC8.csv'), date_format='%Y')
+    master.to_csv(os.path.join(out_loc, 'Irrigation_Counties.csv'), date_format='%Y')
+
+
+def county_project_summary(yr, csv, season_eff_ppt, data_list):
+    dt = datetime(int(yr), 12, 31)
+    mean_key = 'mean_{}'.format(yr)
+    index = date_range(start='20080101', end='20131231', freq='y')
+    df = DataFrame(data=None, columns=['name', 'code', 'ppt', 'gridmet_etr', 'grimet_eff_ppt', 'agrimet_etr',
+                                       'agrimet_eff_ppt', 'Acres_Tot', 'Sq_Meters', 'Acres_Irr',
+                                       'Sq_Meters_Irr',
+                                       'Weighted_Mean_ET_mm', 'Crop_Cons_mm', 'ET_m3', 'ET_af',
+                                       'Crop_Cons_m3',
+                                       'Crop_Cons_af', 'pivot', 'sprinkler', 'flood'], index=index)
+    acres_tot = csv['ACRES'].values.sum()
+    acres_irr = acres_tot
+    sq_m_tot = csv['Sq_Meters'].values.sum()
+    sq_m_irr = sq_m_tot
+    [data_list.append(x) for x in [acres_tot, sq_m_tot, acres_irr, sq_m_irr]]
+
+    # irrigation volumes
+    mean_mm = (csv[mean_key] * csv['Sq_Meters'] / csv['Sq_Meters'].values.sum()).values.sum()
+    cc_mean_mm = mean_mm - season_eff_ppt
+    et_vol_yr_m3 = (csv['Sq_Meters'] * csv[mean_key] / 1000.).values.sum()
+    et_vol_yr_af = (csv['Sq_Meters'] * csv[mean_key] / (1000. * 1233.48)).values.sum()
+    cc_vol_yr_cm = (csv['Sq_Meters'] * (csv[mean_key] - season_eff_ppt) / 1000.).values.sum()
+    cc_vol_yr_af = (
+            csv['Sq_Meters'] * (csv[mean_key] - season_eff_ppt) / (1000. * 1233.48)).values.sum()
+    [data_list.append(x) for x in [mean_mm, cc_mean_mm, et_vol_yr_m3,
+                                   et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
+
+    #  irrigation types
+    data_list = count_irrigation_types(csv, data_list)
+    df.loc[dt] = data_list
+
+    try:
+        diff = abs(acres_tot - (sq_m_tot / 4046.86)) / acres_tot
+        assert diff < 0.01
+    except AssertionError:
+        print('Area check: {} acres should be {} '
+              'sq m, actual is {} sq m'.format(acres_tot,
+                                               acres_tot * 4046.86,
+                                               sq_m_tot))
+    return df
 
 
 def huc_project_summary(yr, csv, season_eff_ppt, data_list):
@@ -434,8 +600,8 @@ if __name__ == '__main__':
     shapefile = os.path.join(home, 'IrrigationGIS', 'Statewide_Irrigation_Shapefile', 'by_huc_8')
     table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports', 'statewide')
     # existing = os.path.join(table, 'OE_Irrigation_Summary_2.csv')
-    # make_tables(HUC_TABLES, table)
-    # build_county_table(HUC_TABLES, shapefile, table, out_loc=table)
+    # make_tables(COUNTIES, table)
+    build_summary_table(HUC_TABLES, shapefile, table, out_loc=table, project='huc')
     # natural_sites_shp(table)
 
 # ========================= EOF ====================================================================
