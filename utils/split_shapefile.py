@@ -31,7 +31,7 @@ def split_shapefile_by_attribute(vector, attribute, out_loc, crs=4326):
         meta = src.schema
 
     for key, val in dct.items():
-        new_shape = os.path.join(out_loc, 'MT_{}'.format(key))
+        new_shape = os.path.join(out_loc, '{}'.format(key))
         with fiopen(new_shape, 'w', driver='ESRI Shapefile',
                     schema=meta, crs=from_epsg(crs)) as dst:
             for feat in val:
@@ -42,8 +42,8 @@ def split_shapefile_by_attribute(vector, attribute, out_loc, crs=4326):
 if __name__ == '__main__':
     home = os.path.expanduser('~')
     location = os.path.join(home, 'IrrigationGIS', 'Statewide_Irrigation_Shapefile')
-    in_shape = os.path.join(location, 'Statewide_MTSPCS_32100.shp')
-    out_dir = os.path.join(location, 'by_county')
-    split_shapefile_by_attribute(in_shape, 'CNT', out_dir, crs=32100)
+    in_shape = os.path.join(location, 'County_WGS_centroids.shp')
+    out_dir = os.path.join(location, 'county_centroids')
+    split_shapefile_by_attribute(in_shape, 'NAMEABBR', out_dir, crs=4326)
     pass
 # ========================= EOF ====================================================================

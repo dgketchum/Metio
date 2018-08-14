@@ -22,7 +22,10 @@ from datetime import datetime
 from fiona import collection
 from fiona.crs import from_epsg
 from geopy.distance import geodesic
-from pandas import read_table, to_datetime, date_range
+from pandas import read_table, to_datetime, date_range, read_csv, to_numeric
+import re
+from numpy import nan
+from pandas.errors import ParserError
 
 STATION_INFO_URL = 'https://www.usbr.gov/pn/agrimet/agrimetmap/usbr_map.json'
 AGRIMET_MET_REQ_SCRIPT = 'https://www.usbr.gov/pn-bin/agrimet.pl'
@@ -69,6 +72,10 @@ WEATHER_PARAMETRS = [('DATETIME', 'Date', '[YYYY-MM-DD]'),
                      ('WG', 'Daily Peak Wind Gust', '[m sec-1]'),
                      ('WR', 'Daily Wind Run', '[m]')]
 
+STANDARD_PARAMS = ['DateTime', '{a}_et', '{a}_etos', '{a}_etrs', '{a}_mm', '{a}_mn',
+                   '{a}_mx', '{a}_pp', '{a}_pu', '{a}_sr', '{a}_ta', '{a}_tg',
+                   '{a}_ua', '{a}_ud', '{a}_wg', '{a}_wr', '{a}_ym']
+
 
 class Agrimet(object):
     def __init__(self, start_date=None, end_date=None, station=None,
@@ -77,6 +84,7 @@ class Agrimet(object):
 
         self.station_info_url = STATION_INFO_URL
         self.station = station
+        self.distance_from_station = None
 
         self.empty_df = True
 
@@ -125,6 +133,7 @@ class Agrimet(object):
             dist = geodesic((target_lat, target_lon), (lat_stn, lon_stn)).km
             distances[stn_site_id] = dist
         k = min(distances, key=distances.get)
+        self.distance_from_station = dist
         return k
 
     def load_stations(self):
@@ -143,29 +152,44 @@ class Agrimet(object):
 
         if data_class == 'met':
             url = '{}?{}'.format(AGRIMET_MET_REQ_SCRIPT, self.params)
+            raw_df = read_csv(url, skip_blank_lines=True,
+                              header=0, sep=r'\,|\t', engine='python')
+
+            raw_df.index = date_range(self.start, periods=raw_df.shape[0])
+            raw_df = raw_df[to_datetime(self.start): to_datetime(self.end)]
+
+            if raw_df.shape[0] > 3:
+                self.empty_df = False
+
+            if return_raw:
+                return raw_df
+            raw_df = raw_df[[x.format(a=self.station) for x in STANDARD_PARAMS]]
+            reformed_data = self._reformat_dataframe(raw_df)
+
+            if out_csv_file:
+                reformed_data.to_csv(path_or_buf=out_csv_file)
+
+            return reformed_data
+
         elif data_class == 'crop':
+
             if not self.start.year == self.end.year:
                 raise ValueError('Must choose one year for crop water use reports.')
-            two_dig_yr = str(self.start.year)[-2:]
+            two_dig_yr = int(str(self.start.year)[-2:])
             url = AGRIMET_CROP_REQ_SCRIPT.format(self.station, two_dig_yr)
+            raw_df = read_table(url, skip_blank_lines=True, skiprows=[3], index_col=[0],
+                                header=2, engine='python', delim_whitespace=True)
 
-        raw_df = read_table(url, skip_blank_lines=True,
-                            header=0, sep=r'\,|\t', engine='python')
-        raw_df.index = date_range(self.start, periods=raw_df.shape[0])
-        raw_df = raw_df[to_datetime(self.start): to_datetime(self.end)]
+            start_str = format(raw_df.first_valid_index(), '03d')
+            et_summary_start = datetime.strptime('{}{}'.format(self.start.year, start_str), '%Y%m%d')
+            raw_df.index = date_range(et_summary_start, periods=raw_df.shape[0])
+            idx = date_range(self.start, end=self.end)
 
-        if raw_df.shape[0] > 3:
-            self.empty_df = False
+            raw_df.replace('--', '0.0', inplace=True)
+            raw_df = raw_df.astype(float)
+            reformed_data = raw_df.reindex(idx, fill_value=0.0)
 
-        if return_raw:
-            return raw_df
-
-        reformed_data = self._reformat_dataframe(raw_df)
-
-        if out_csv_file:
-            reformed_data.to_csv(path_or_buf=out_csv_file)
-
-        return reformed_data
+            return reformed_data
 
     def _reformat_dataframe(self, df):
 

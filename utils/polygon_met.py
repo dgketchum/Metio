@@ -16,6 +16,7 @@
 
 import os
 from pandas import read_csv, DataFrame, date_range, concat, Series
+from pandas.errors import ParserError
 from fiona import open as fopen
 from fiona import collection
 from fiona.crs import from_epsg
@@ -156,63 +157,64 @@ HUC_TABLES = [
     'MT_17010212',
     'MT_17010213']
 
-COUNTIES = ['BE',
-            'BH',
-            'BL',
-            'BR',
-            'CA',
-            'CH',
-            'CR',
-            'CS',
-            'CU',
-            'DA',
-            'DL',
-            'DW',
-            'FA',
-            'FE',
-            'FL',
-            'GA',
-            'GF',
-            'GL',
-            'GR',
-            'GV',
-            'HI',
-            'JB',
-            'JE',
-            'LA',
-            'LC',
-            'LI',
-            'LN',
-            'MA',
-            'MC',
-            'ME',
-            'MI',
-            'MS',
-            'MU',
-            'PA',
-            'PE',
-            'PH',
-            'PI',
-            'PO',
-            'PR',
-            'PW',
-            'RA',
-            'RI',
-            'RO',
-            'RS',
-            'SA',
-            'SB',
-            'SG',
-            'SH',
-            'ST',
-            'TE',
-            'TO',
-            'TR',
-            'VA',
-            'WH',
-            'WI',
-            'YE'
-            ]
+COUNTIES = [
+    # 'BE',
+    # 'BH',
+    # 'BL',
+    # 'BR',
+    # 'CA',
+    # 'CH',
+    # 'CR',
+    # 'CS',
+    # 'CU',
+    # 'DA',
+    # 'DL',
+    # 'DW',
+    # 'FA',
+    # 'FE',
+    'FL',
+    # 'GA',
+    # 'GF',
+    # 'GL',
+    # 'GR',
+    # 'GV',
+    # 'HI',
+    # 'JB',
+    # 'JE',
+    # 'LA',
+    # 'LC',
+    # 'LI',
+    # 'LN',
+    # 'MA',
+    # 'MC',
+    # 'ME',
+    # 'MI',
+    # 'MS',
+    # 'MU',
+    # 'PA',
+    # 'PE',
+    # 'PH',
+    # 'PI',
+    # 'PO',
+    # 'PR',
+    # 'PW',
+    # 'RA',
+    # 'RI',
+    # 'RO',
+    # 'RS',
+    # 'SA',
+    # 'SB',
+    # 'SG',
+    # 'SH',
+    # 'ST',
+    # 'TE',
+    # 'TO',
+    # 'TR',
+    # 'VA',
+    # 'WH',
+    # 'WI',
+    # 'YE'
+]
 
 COUNTY_KEY = {
     'CA': 'CARBON',
@@ -349,21 +351,38 @@ def get_gridmet(start, end, lat, lon):
     return m_ppt, m_etr
 
 
-def get_agrimet(lat, lon, yr, param='ETRS'):
+def get_agrimet_etr(lat, lon, yr):
     try:
         agrimet = Agrimet(lat=lat, lon=lon, start_date=START.format(yr),
                           end_date=END.format(yr), interval='daily')
-    except:
+        print('Station {} is {} km from given location'.format(agrimet.station,
+                                                               round(agrimet.distance_from_station, 1)))
+        formed = agrimet.fetch_data(data_class='met')
+
+    except ParserError:
+        print('Station data unavailable, falling back to Deer Lodge.')
         agrimet = Agrimet(station='drlm', start_date=START.format(yr),
                           end_date=END.format(yr), interval='daily')
-
-    if param == 'ETRS':
         formed = agrimet.fetch_data(data_class='met')
-        agri_etr = formed[param].groupby(lambda x: x.month).sum().values
-        return agri_etr
-    if param == 'crop':
-        formed = agrimet.fetch_data(data_class=param)
-    return formed
+
+    except ValueError:
+        print('Station data is malformed, using Deer Lodge.')
+        agrimet = Agrimet(station='drlm', start_date=START.format(yr),
+                          end_date=END.format(yr), interval='daily')
+        formed = agrimet.fetch_data(data_class='met')
+
+    agri_etr = formed['ETRS'].groupby(lambda x: x.month).sum().values
+    return agri_etr
+
+
+def get_agrimet_crop(lat, lon, yr):
+    agrimet = Agrimet(lat=lat, lon=lon, start_date=START.format(yr),
+                      end_date=END.format(yr), interval='daily')
+    formed = agrimet.fetch_data(data_class='crop')
+    # mean afalfa crop water use from in to mm
+    alfalfa = formed['ALFM'] * 25.4
+
+    return alfalfa
 
 
 def count_irrigation_types(csv, data):
@@ -395,6 +414,32 @@ def count_irrigation_types(csv, data):
     return data
 
 
+def make_empty_df():
+    index = date_range(start='20080101', end='20131231', freq='y')
+    df = DataFrame(data=None, columns=['name',
+                                       'code',
+                                       'gridmet_ppt',
+                                       'gridmet_etr',
+                                       'agrimet_etr',
+                                       'ratio_grit_to_agri',
+                                       'eff_ppt',
+                                       'Acres_Tot',
+                                       'Sq_Meters',
+                                       'Acres_Irr',
+                                       'Sq_Meters_Irr',
+                                       'Weighted_Mean_ET_mm',
+                                       'Crop_Cons_mm',
+                                       'ET_m3',
+                                       'ET_af',
+                                       'Crop_Cons_m3',
+                                       'Crop_Cons_af',
+                                       'pivot',
+                                       'sprinkler',
+                                       'flood'],
+                   index=index)
+    return df
+
+
 def build_summary_table(source, shapes, tables, out_loc, project='oe'):
     master = DataFrame()
     lat, lon = None, None
@@ -407,36 +452,43 @@ def build_summary_table(source, shapes, tables, out_loc, project='oe'):
             with fopen(shp) as src:
                 # .shp files should be in epsg: 102300
                 for feat in src:
-                    coords = feat['geometry']['coordinates'][0][0]
-                    if len(coords) > 2:
-                        coords = coords[0]
-                    lat, lon = state_plane_MT_to_WGS(coords[1], coords[0])
-                    break
+                    if src.crs != {'init': 'epsg:4326'}:
+                        coords = feat['geometry']['coordinates'][0][0]
+                        if len(coords) > 2:
+                            coords = coords[0]
 
+                        lat, lon = state_plane_MT_to_WGS(coords[1], coords[0])
+                        break
+                    else:
+                        lat, lon = feat['geometry']['coordinates'][1], feat['geometry']['coordinates'][0]
+
+            df = make_empty_df()
             for yr in YEARS:
                 if project == 'co':
                     data = [COUNTY_KEY[table], table]
                 else:
-                    data = [table]
+                    data = [table, None]
 
                 s, e = datetime.strptime(START.format(yr), FMT), datetime.strptime(END.format(yr), FMT)
                 m_ppt, m_etr = get_gridmet(s, e, lat, lon)
-                m_agri_etr = get_agrimet(lat, lon, yr, param='ETRS')
-                gridmet_eff_ppt = effective_precip(m_ppt, m_etr)
-                m_agrimet_eff_ppt = effective_precip(m_ppt, m_agri_etr)
+                m_agri_etr = get_agrimet_etr(lat, lon, yr)
 
-                season_agri_etr, season_agri_eff_ppt = m_agri_etr.sum(), m_agrimet_eff_ppt.sum()
-                season_ppt, season_etr, season_eff_ppt = m_ppt.sum(), m_etr.sum(), gridmet_eff_ppt.sum()
-                [data.append(x) for x in [season_ppt, season_etr, season_eff_ppt,
-                                          season_agri_etr, season_agri_eff_ppt]]
+                # gridmet_eff_ppt = effective_precip(m_ppt, m_etr)
+                # m_agrimet_eff_ppt = effective_precip(m_ppt, m_agri_etr)
+
+                agrimet_crop_use_eff_ppt = get_agrimet_crop(lat, lon, yr)
+                season_agri_eff_ppt = agrimet_crop_use_eff_ppt.sum()
+
+                season_agri_etr = m_agri_etr.sum()
+                season_ppt, season_grid_etr, season_eff_ppt = m_ppt.sum(), m_etr.sum(), agrimet_crop_use_eff_ppt.sum()
+                ratio = season_grid_etr / season_agri_etr
+
+                [data.append(x) for x in [season_ppt, season_grid_etr, season_agri_etr, ratio, season_agri_eff_ppt]]
                 if project == 'oe':
-                    df = oe_project_summary(yr, csv, season_eff_ppt, data)
+                    df = oe_project_summary(df, yr, csv, season_eff_ppt, data)
 
-                elif project == 'huc':
-                    df = huc_project_summary(yr, csv, season_eff_ppt, data)
-
-                elif project == 'co':
-                    df = county_project_summary(yr, csv, season_eff_ppt, data)
+                elif project in ['huc', 'co']:
+                    df = project_summary(df, yr, csv, season_eff_ppt, data)
 
                 else:
                     Exception('Choose a valid project type.')
@@ -449,16 +501,9 @@ def build_summary_table(source, shapes, tables, out_loc, project='oe'):
     master.to_csv(os.path.join(out_loc, 'Irrigation_Counties.csv'), date_format='%Y')
 
 
-def county_project_summary(yr, csv, season_eff_ppt, data_list):
+def project_summary(df, yr, csv, season_eff_ppt, data_list):
     dt = datetime(int(yr), 12, 31)
     mean_key = 'mean_{}'.format(yr)
-    index = date_range(start='20080101', end='20131231', freq='y')
-    df = DataFrame(data=None, columns=['name', 'code', 'ppt', 'gridmet_etr', 'grimet_eff_ppt', 'agrimet_etr',
-                                       'agrimet_eff_ppt', 'Acres_Tot', 'Sq_Meters', 'Acres_Irr',
-                                       'Sq_Meters_Irr',
-                                       'Weighted_Mean_ET_mm', 'Crop_Cons_mm', 'ET_m3', 'ET_af',
-                                       'Crop_Cons_m3',
-                                       'Crop_Cons_af', 'pivot', 'sprinkler', 'flood'], index=index)
     acres_tot = csv['ACRES'].values.sum()
     acres_irr = acres_tot
     sq_m_tot = csv['Sq_Meters'].values.sum()
@@ -480,70 +525,15 @@ def county_project_summary(yr, csv, season_eff_ppt, data_list):
     data_list = count_irrigation_types(csv, data_list)
     df.loc[dt] = data_list
 
-    try:
-        diff = abs(acres_tot - (sq_m_tot / 4046.86)) / acres_tot
-        assert diff < 0.01
-    except AssertionError:
-        print('Area check: {} acres should be {} '
-              'sq m, actual is {} sq m'.format(acres_tot,
-                                               acres_tot * 4046.86,
-                                               sq_m_tot))
+    check_area(acres_tot, sq_m_tot)
+
     return df
 
 
-def huc_project_summary(yr, csv, season_eff_ppt, data_list):
-    dt = datetime(int(yr), 12, 31)
-    mean_key = 'mean_{}'.format(yr)
-    index = date_range(start='20080101', end='20131231', freq='y')
-    df = DataFrame(data=None, columns=['name', 'ppt', 'gridmet_etr', 'grimet_eff_ppt', 'agrimet_etr',
-                                       'agrimet_eff_ppt', 'Acres_Tot', 'Sq_Meters', 'Acres_Irr',
-                                       'Sq_Meters_Irr',
-                                       'Weighted_Mean_ET_mm', 'Crop_Cons_mm', 'ET_m3', 'ET_af',
-                                       'Crop_Cons_m3',
-                                       'Crop_Cons_af', 'pivot', 'sprinkler', 'flood'], index=index)
-    acres_tot = csv['ACRES'].values.sum()
-    acres_irr = acres_tot
-    sq_m_tot = csv['Sq_Meters'].values.sum()
-    sq_m_irr = sq_m_tot
-    [data_list.append(x) for x in [acres_tot, sq_m_tot, acres_irr, sq_m_irr]]
-
-    # irrigation volumes
-    mean_mm = (csv[mean_key] * csv['Sq_Meters'] / csv['Sq_Meters'].values.sum()).values.sum()
-    cc_mean_mm = mean_mm - season_eff_ppt
-    et_vol_yr_m3 = (csv['Sq_Meters'] * csv[mean_key] / 1000.).values.sum()
-    et_vol_yr_af = (csv['Sq_Meters'] * csv[mean_key] / (1000. * 1233.48)).values.sum()
-    cc_vol_yr_cm = (csv['Sq_Meters'] * (csv[mean_key] - season_eff_ppt) / 1000.).values.sum()
-    cc_vol_yr_af = (
-            csv['Sq_Meters'] * (csv[mean_key] - season_eff_ppt) / (1000. * 1233.48)).values.sum()
-    [data_list.append(x) for x in [mean_mm, cc_mean_mm, et_vol_yr_m3,
-                                   et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
-
-    #  irrigation types
-    data_list = count_irrigation_types(csv, data_list)
-    df.loc[dt] = data_list
-
-    try:
-        diff = abs(acres_tot - (sq_m_tot / 4046.86))
-        assert diff < 100.
-    except AssertionError:
-        print('Area check: {} acres should be {} '
-              'sq m, actual is {} sq m'.format(acres_tot,
-                                               acres_tot * 4046.86,
-                                               sq_m_tot))
-    return df
-
-
-def oe_project_summary(yr, csv, season_eff_ppt, data_list):
+def oe_project_summary(df, yr, csv, season_eff_ppt, data_list):
     dt = datetime(int(yr), 12, 31)
     mean_key = 'mean_{}'.format(yr)
     irr_key = 'Irr_{}'.format(yr)
-    index = date_range(start='20080101', end='20131231', freq='y')
-    df = DataFrame(data=None, columns=['name', 'ppt', 'gridmet_etr', 'grimet_eff_ppt', 'agrimet_etr',
-                                       'agrimet_eff_ppt', 'Acres_Tot', 'Sq_Meters', 'Acres_Irr',
-                                       'Sq_Meters_Irr',
-                                       'Weighted_Mean_ET_mm', 'Crop_Cons_mm', 'ET_m3', 'ET_af',
-                                       'Crop_Cons_m3',
-                                       'Crop_Cons_af', 'pivot', 'sprinkler', 'flood'], index=index)
     irr_df = csv[csv[irr_key] == 1]
     try:
         acres_tot = csv['Acres'].values.sum()
@@ -575,33 +565,43 @@ def oe_project_summary(yr, csv, season_eff_ppt, data_list):
 
     data_list = count_irrigation_types(csv, data_list)
     df.loc[dt] = data_list
-    try:
-        diff = abs(acres_tot - (sq_m_tot / 4046.86))
-        assert diff < 100.
-    except AssertionError:
-        print('Area check: {} acres should be {} '
-              'sq m, actual is {} sq m'.format(acres_tot,
-                                               acres_tot * 4046.86,
-                                               sq_m_tot))
+    check_area(acres_tot, sq_m_tot)
+
     return df
 
 
 def state_plane_MT_to_WGS(y, x):
-    in_proj = Proj(
-        '+proj=lcc +lat_1=45 +lat_2=49 +lat_0=44.25 +lon_0=-109.5 +x_0=600000 +y_0=0 '
-        '+ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs', preserve_units=True)
+    # 102300
+    nad83_MT = '+proj=lcc +lat_1=45 +lat_2=49 +lat_0=44.25 +lon_0=-109.5 ' \
+               '+x_0=600000 +y_0=0 +ellps=GRS80 +units=m +no_defs'
+    # 32100
+    nad83_HARN_SP_MT = '+proj=lcc +lat_1=49 +lat_2=45 +lat_0=44.25 +lon_0=-109.5 +x_0=600000 ' \
+                       '+y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs'
+
+    in_proj = Proj(nad83_HARN_SP_MT, preserve_units=True)
     x, y = in_proj(x, y, inverse=True)
 
     return y, x
 
 
+def check_area(acres, sq_meters):
+    try:
+        diff = abs(acres - (sq_meters / 4046.86)) / acres
+        assert diff < 0.01
+    except AssertionError:
+        print('Area check: {} acres should be {} '
+              'sq m, actual is {} sq m'.format(acres,
+                                               acres * 4046.86,
+                                               sq_meters))
+
+
 if __name__ == '__main__':
     home = os.path.expanduser('~')
-    shapefile = os.path.join(home, 'IrrigationGIS', 'Statewide_Irrigation_Shapefile', 'by_huc_8')
-    table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports', 'statewide')
+    shapefile = os.path.join(home, 'IrrigationGIS', 'Statewide_Irrigation_Shapefile', 'county_ag_points')
+    table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports', 'county')
     # existing = os.path.join(table, 'OE_Irrigation_Summary_2.csv')
     # make_tables(COUNTIES, table)
-    build_summary_table(HUC_TABLES, shapefile, table, out_loc=table, project='huc')
+    build_summary_table(COUNTIES, shapefile, table, out_loc=table, project='co')
     # natural_sites_shp(table)
 
 # ========================= EOF ====================================================================
