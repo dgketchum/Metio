@@ -34,6 +34,7 @@ class TestAgrimet(unittest.TestCase):
         self.site_ids = ['umhm', 'robi', 'hntu', 'faln', 'mdxo', 'mdso', 'masw']
         self.fetch_site = 'drlm'
         self.gp_site = 'bozm'
+        self.pn_site = 'abei'
         self.outside_PnGp_sites = ['pvan', 'mdki', 'laju']
         self.points_dir = os.path.join(self.root, 'data', 'points')
         self.out_shape = os.path.join(self.root, 'data', 'points', 'agmet_station_write_test.shp')
@@ -370,7 +371,14 @@ class TestAgrimet(unittest.TestCase):
     def test_great_plains(self):
 
         a = Agrimet(station=self.gp_site, start_date=self.start, end_date=self.end, interval='daily')
-        a.fetch_met_data()
+        df = a.fetch_met_data()
+
+        self.assertIsInstance(a, Agrimet)
+
+    def test_pacific_nw(self):
+
+        a = Agrimet(station=self.pn_site, start_date=self.start, end_date=self.end, interval='daily')
+        df = a.fetch_met_data()
 
         self.assertIsInstance(a, Agrimet)
 
