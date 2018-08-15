@@ -22,7 +22,7 @@ from datetime import datetime
 from fiona import collection
 from fiona.crs import from_epsg
 from geopy.distance import geodesic
-from pandas import read_table, to_datetime, date_range, read_csv, to_numeric
+from pandas import read_table, to_datetime, date_range, read_csv, DataFrame
 import re
 from numpy import nan
 from pandas.errors import ParserError
@@ -356,10 +356,23 @@ class Agrimet(object):
             raw_df = read_csv(url, skip_blank_lines=True,
                               header=0, sep=r'\,|\t', engine='python')
         if self.region == 'gp':
-             url = 'station_code={}&water_year={}&Time_Period=YEAR&parameters=DEF+%3D+' \
-                            'Default+Set+%28ET%2CMX%2CMN%2CPP%2CSR%2CTA%2CWR%2CYM%29'.format(self.station,
-                                                                                             self.end.year,
-                                                                                             )
+            url = '{}?station_code={}&water_year={}&Time_Period=YEAR&parameters=DEF+%3D+' \
+                  'Default+Set+%28ET%2CMX%2CMN%2CPP%2CSR%2CTA%2CWR%2CYM%29'.format(AGRIMET_MET_REQ_SCRIPT_GP,
+                                                                                   self.station,
+                                                                                   self.end.year)
+            r = requests.get(url)
+            filtered = []
+            for l in r.iter_lines():
+                try:
+                    row = l.decode().split(' ')
+                    row = list(filter(None, row))
+                    row = [float(x) for x in row]
+                    if not row:
+                        pass
+                    else:
+                        filtered.append(row)
+                except ValueError:
+                    pass
 
         raw_df.index = date_range(self.start, periods=raw_df.shape[0])
         raw_df = raw_df[to_datetime(self.start): to_datetime(self.end)]
