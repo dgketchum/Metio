@@ -15,6 +15,7 @@
 # =============================================================================================
 from __future__ import print_function, absolute_import
 
+import io
 import json
 import requests
 from requests.compat import urlencode, OrderedDict
@@ -22,7 +23,7 @@ from datetime import datetime
 from fiona import collection
 from fiona.crs import from_epsg
 from geopy.distance import geodesic
-from pandas import read_table, to_datetime, date_range, read_csv, DataFrame
+from pandas import read_table, to_datetime, date_range, read_csv, to_numeric
 import re
 from numpy import nan
 from pandas.errors import ParserError
@@ -74,9 +75,14 @@ WEATHER_PARAMETRS = [('DATETIME', 'Date', '[YYYY-MM-DD]'),
                      ('WG', 'Daily Peak Wind Gust', '[m sec-1]'),
                      ('WR', 'Daily Wind Run', '[m]')]
 
-STANDARD_PARAMS = ['DateTime', '{a}_et', '{a}_etos', '{a}_etrs', '{a}_mm', '{a}_mn',
-                   '{a}_mx', '{a}_pp', '{a}_pu', '{a}_sr', '{a}_ta', '{a}_tg',
-                   '{a}_ua', '{a}_ud', '{a}_wg', '{a}_wr', '{a}_ym']
+TARGET_COLUMNS = ['{a}_et', '{a}_etos', '{a}_etrs', '{a}_mm', '{a}_mn',
+                  '{a}_mx', '{a}_pp', '{a}_pu', '{a}_sr', '{a}_ta', '{a}_tg',
+                  '{a}_ua', '{a}_ud', '{a}_wg', '{a}_wr', '{a}_ym']
+
+STANDARD_PARAMS = ['et', 'etos', 'etrs', 'mm', 'mn',
+                   'mx', 'pp', 'pu', 'sr', 'ta', 'tg',
+                   'ua', 'ud', 'wg', 'wr', 'ym']
+
 ALL_STATIONS = {'abei': 'pn',
                 'acki': 'pn',
                 'afty': 'pn',
@@ -349,40 +355,44 @@ class Agrimet(object):
 
     def fetch_met_data(self, return_raw=False, out_csv_file=None):
 
-        # meteorology data
-        # 'https://www.usbr.gov/pn-bin/agrimet.pl?cbtt=abei&interval=daily&format=1&back=1266'
         if self.region == 'pn':
             url = '{}?{}'.format(AGRIMET_MET_REQ_SCRIPT_PN, self.params)
             raw_df = read_csv(url, skip_blank_lines=True,
                               header=0, sep=r'\,|\t', engine='python')
-        if self.region == 'gp':
-            url = '{}?station_code={}&water_year={}&Time_Period=YEAR&parameters=DEF+%3D+' \
-                  'Default+Set+%28ET%2CMX%2CMN%2CPP%2CSR%2CTA%2CWR%2CYM%29'.format(AGRIMET_MET_REQ_SCRIPT_GP,
-                                                                                   self.station,
-                                                                                   self.end.year)
-            r = requests.get(url)
-            filtered = []
-            for l in r.iter_lines():
-                try:
-                    row = l.decode().split(' ')
-                    row = list(filter(None, row))
-                    row = [float(x) for x in row]
-                    if not row:
-                        pass
-                    else:
-                        filtered.append(row)
-                except ValueError:
-                    pass
 
-        raw_df.index = date_range(self.start, periods=raw_df.shape[0])
+        if self.region == 'gp':
+            pairs = ','.join(['{} {}'.format(self.station.upper(), x.upper()) for x in STANDARD_PARAMS])
+            url = "https://www.usbr.gov/gp-bin/webarccsv.pl?parameter={0}&syer={1}&smnth={2}&sdy={3}&" \
+                  "eyer={4}&emnth={5}&edy={6}&format=4".format(pairs,
+                                                               self.start.year,
+                                                               self.start.month,
+                                                               self.start.day,
+                                                               self.end.year,
+                                                               self.end.month,
+                                                               self.end.day)
+
+            r = requests.get(url)
+            raw_df = read_csv(io.StringIO(r.content.decode('utf-8')), header=3, index_col=0)
+            raw_df.rename(str.lower, axis='columns', inplace=True)
+            raw_df.replace({'NO RECORD ': ''}, regex=True, inplace=True)
+            cols = raw_df.columns[raw_df.dtypes.eq('object')]
+            raw_df[cols] = raw_df[cols].apply(to_numeric, errors='coerce')
+
+        raw_df.index = date_range(self.start, periods=raw_df.shape[0], name='DateTime')
         raw_df = raw_df[to_datetime(self.start): to_datetime(self.end)]
+
+        try:
+            raw_df.drop(columns='DateTime', inplace=True)
+        except KeyError:
+            pass
 
         if raw_df.shape[0] > 3:
             self.empty_df = False
 
         if return_raw:
             return raw_df
-        raw_df = raw_df[[x.format(a=self.station) for x in STANDARD_PARAMS]]
+
+        raw_df = raw_df[[x.format(a=self.station) for x in TARGET_COLUMNS]]
         reformed_data = self._reformat_dataframe(raw_df)
 
         if out_csv_file:
