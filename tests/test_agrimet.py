@@ -33,6 +33,7 @@ class TestAgrimet(unittest.TestCase):
         self.dirname_image = os.path.join(self.root, 'data', 'image_test', 'lc8_image')
         self.site_ids = ['umhm', 'robi', 'hntu', 'faln', 'mdxo', 'mdso', 'masw']
         self.fetch_site = 'drlm'
+        self.gp_site = 'bozm'
         self.outside_PnGp_sites = ['pvan', 'mdki', 'laju']
         self.points_dir = os.path.join(self.root, 'data', 'points')
         self.out_shape = os.path.join(self.root, 'data', 'points', 'agmet_station_write_test.shp')
@@ -41,6 +42,210 @@ class TestAgrimet(unittest.TestCase):
         self.excepted_sites = ['clon', 'clvn', 'csdu', 'hntu', 'pngo', 'defo', 'echo', 'hrmo',
                                'lggu', 'evfu', 'libw', 'psfi', 'mdno', 'mdxo', 'mdeo', 'mwso',
                                'olth02', 'olth01', 'paro', 'defo', 'sugi', 'rxgi', 'shli', 'ifai']
+        self.start_season, self.end_season = '2015-04-15', '2015-10-15'
+        self.all_stations = ['abei',
+                             'acki',
+                             'afty',
+                             'agko',
+                             'ahti',
+                             'anvn',
+                             'arao',
+                             'bano',
+                             'bato',
+                             'bewo',
+                             'bfam',
+                             'bfgi',
+                             'bftm',
+                             'bkvo',
+                             'blbu',
+                             'blcu',
+                             'blou',
+                             'bndw',
+                             'boii',
+                             'bomt',
+                             'bozm',
+                             'brgm',
+                             'brju',
+                             'brko',
+                             'brtm',
+                             'bucu',
+                             'bvpc',
+                             'cdai',
+                             'cedc',
+                             'cedu',
+                             'chaw',
+                             'chvo',
+                             'cjdw',
+                             'ckvy',
+                             'clon',
+                             'clvn',
+                             'covm',
+                             'crnu',
+                             'crsm',
+                             'crvo',
+                             'csdu',
+                             'csvu',
+                             'cvan',
+                             'defo',
+                             'deni',
+                             'dlnm',
+                             'dlt01',
+                             'drfu',
+                             'drlm',
+                             'drpw',
+                             'dtro',
+                             'ducu',
+                             'dwni',
+                             'ebri',
+                             'echo',
+                             'efhw',
+                             'elmu',
+                             'eurn',
+                             'evfu',
+                             'evty',
+                             'fafi',
+                             'faln',
+                             'flou',
+                             'fogo',
+                             'frnu',
+                             'frt02',
+                             'fthi',
+                             'gcdw',
+                             'gdvi',
+                             'gerw',
+                             'gfmt',
+                             'gfri',
+                             'glgm',
+                             'golw',
+                             'grei',
+                             'grtu',
+                             'gun01',
+                             'hami',
+                             'hcko',
+                             'hdru',
+                             'hero',
+                             'hntu',
+                             'hoxo',
+                             'hrfo',
+                             'hrhw',
+                             'hrlm',
+                             'hrmo',
+                             'huan',
+                             'hvmt',
+                             'ichi',
+                             'ifai',
+                             'igri',
+                             'imbo',
+                             'jvwm',
+                             'kflo',
+                             'kflw',
+                             'ktbi',
+                             'lako',
+                             'laku',
+                             'lbrw',
+                             'legw',
+                             'lewu',
+                             'lggu',
+                             'lgiu',
+                             'libw',
+                             'lidw',
+                             'lkpo',
+                             'lmmm',
+                             'lndn',
+                             'loau',
+                             'lofi',
+                             'loro',
+                             'mali',
+                             'masw',
+                             'matm',
+                             'mdeo',
+                             'mdfo',
+                             'mdki',
+                             'mdno',
+                             'mdso',
+                             'mdto',
+                             'mdxo',
+                             'mnpi',
+                             'mnru',
+                             'mnti',
+                             'moan',
+                             'mrso',
+                             'msvn',
+                             'muru',
+                             'mwsm',
+                             'mwso',
+                             'nepu',
+                             'nmpi',
+                             'nsvn',
+                             'odsw',
+                             'olth01',
+                             'olth02',
+                             'omaw',
+                             'onto',
+                             'osgi',
+                             'owei',
+                             'panu',
+                             'paro',
+                             'paru',
+                             'pcyo',
+                             'pelu',
+                             'pici',
+                             'plvu',
+                             'pmai',
+                             'pngo',
+                             'pobo',
+                             'psfi',
+                             'psti',
+                             'pvan',
+                             'pwln',
+                             'rbym',
+                             'rdbm',
+                             'rdhu',
+                             'rgbi',
+                             'robi',
+                             'rogn',
+                             'roso',
+                             'rpti',
+                             'rrci',
+                             'rrii',
+                             'rthi',
+                             'rxgi',
+                             'sacw',
+                             'sbmw',
+                             'scpu',
+                             'shli',
+                             'sigm',
+                             'silw',
+                             'slwi',
+                             'smvn',
+                             'snkn',
+                             'snsu',
+                             'snwu',
+                             'span',
+                             'spfu',
+                             'spli',
+                             'spvu',
+                             'ssvn',
+                             'stvn',
+                             'sugi',
+                             'sutu',
+                             'svwm',
+                             'swmn',
+                             'tabi',
+                             'teri',
+                             'tfgi',
+                             'tlkc',
+                             'tosm',
+                             'trfm',
+                             'trmu',
+                             'trpu',
+                             'trti',
+                             'twfi',
+                             'umhm',
+                             'vecu',
+                             'vrnu',
+                             'wrdo',
+                             'wssm']
 
     def test_instantiate_Agrimet(self):
         """ Test object instantiation.
@@ -89,8 +294,8 @@ class TestAgrimet(unittest.TestCase):
         agrimet = Agrimet(station=self.fetch_site, start_date='2015-01-01',
                           end_date='2015-12-31', interval='daily')
 
-        raw = agrimet.fetch_data(return_raw=True)
-        formed = agrimet.fetch_data()
+        raw = agrimet.fetch_met_data(return_raw=True)
+        formed = agrimet.fetch_met_data()
 
         a = raw.iloc[1, :].tolist()
         b = formed.iloc[1, :].tolist()
@@ -120,36 +325,65 @@ class TestAgrimet(unittest.TestCase):
                     found_site = agrimet.station
                     self.assertEqual(expected_site, found_site)
 
-    # def test_fetch_data_many_stations(self):
-    #     """ Test download nultiple agrimet station data download.
-    #     This runs through a list of stations, reformats data, checks unit conversion,
-    #     and Pandas.DataFrame
-    #     :return:
-    #     """
-    #     for site in self.outside_PnGp_sites:
-    #         agrimet = Agrimet(station=site, start_date='2015-05-15',
-    #                           end_date='2015-05-15', interval='daily')
-    #         raw = agrimet.fetch_data(return_raw=True)
-    #         formed = agrimet.fetch_data()
-    #         params = ['et', 'mm', 'pc', 'sr', 'wr']
-    #         for param in params:
-    #             key = '{}_{}'.format(site, param)
-    #             converted = formed[param.upper()].values.flatten()[0]
-    #             unconverted = raw[key].values.flatten()[0]
-    #             if param in ['et', 'pc']:
-    #                 unconverted *= 25.4
-    #             if param == 'mm':
-    #                 unconverted = (unconverted - 32) * 5 / 9
-    #             if param == 'sr':
-    #                 unconverted *= 41868.
-    #             if param == 'wr':
-    #                 unconverted *= 1609.34
-    #             if isnan(converted):
-    #                 pass
-    #             elif agrimet.empty_df:
-    #                 pass
-    #             else:
-    #                 self.assertAlmostEqual(converted, unconverted, delta=0.01)
+    def test_fetch_data_many_stations(self):
+        """ Test download nultiple agrimet station data download.
+        This runs through a list of stations, reformats data, checks unit conversion,
+        and Pandas.DataFrame
+        :return:
+        """
+        for site in self.outside_PnGp_sites:
+            agrimet = Agrimet(station=site, start_date='2015-05-15',
+                              end_date='2015-05-15', interval='daily')
+            raw = agrimet.fetch_met_data(return_raw=True)
+            formed = agrimet.fetch_met_data()
+            params = ['et', 'mm', 'pc', 'sr', 'wr']
+            for param in params:
+                key = '{}_{}'.format(site, param)
+                converted = formed[param.upper()].values.flatten()[0]
+                unconverted = raw[key].values.flatten()[0]
+                if param in ['et', 'pc']:
+                    unconverted *= 25.4
+                if param == 'mm':
+                    unconverted = (unconverted - 32) * 5 / 9
+                if param == 'sr':
+                    unconverted *= 41868.
+                if param == 'wr':
+                    unconverted *= 1609.34
+                if isnan(converted):
+                    pass
+                elif agrimet.empty_df:
+                    pass
+                else:
+                    self.assertAlmostEqual(converted, unconverted, delta=0.01)
+
+    def test_web_retrieval_all_stations_met(self):
+
+        for s in self.all_stations:
+            a = Agrimet(station=s, start_date=self.start, end_date=self.end, interval='daily')
+            key = {}
+            try:
+                a.fetch_met_data()
+                print('{} appears valid'.format(a.station))
+            except:
+                print('{} appears invalid'.format(a.station))
+
+    def test_great_plains(self):
+
+        a = Agrimet(station=self.gp_site, start_date=self.start, end_date=self.end, interval='daily')
+        a.fetch_met_data()
+
+        self.assertIsInstance(a, Agrimet)
+
+    def test_web_retrieval_all_stations_crop(self):
+
+        for s in self.all_stations:
+            a = Agrimet(station=s, start_date=self.start_season,
+                        end_date=self.end_season, interval='daily')
+            try:
+                a.fetch_met_data()
+                print('{} appears valid'.format(a.station))
+            except:
+                print('{} appears invalid'.format(a.station))
 
     def test_write_agrimet_shapefile(self):
 

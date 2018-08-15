@@ -28,8 +28,10 @@ from numpy import nan
 from pandas.errors import ParserError
 
 STATION_INFO_URL = 'https://www.usbr.gov/pn/agrimet/agrimetmap/usbr_map.json'
-AGRIMET_MET_REQ_SCRIPT = 'https://www.usbr.gov/pn-bin/agrimet.pl'
-AGRIMET_CROP_REQ_SCRIPT = 'https://www.usbr.gov/pn/agrimet/chart/{}{}et.txt'
+AGRIMET_MET_REQ_SCRIPT_PN = 'https://www.usbr.gov/pn-bin/agrimet.pl'
+AGRIMET_CROP_REQ_SCRIPT_PN = 'https://www.usbr.gov/pn/agrimet/chart/{}{}et.txt'
+AGRIMET_MET_REQ_SCRIPT_GP = 'https://www.usbr.gov/gp-bin/agrimet_archives.pl'
+AGRIMET_CROP_REQ_SCRIPT_GP = 'https://www.usbr.gov/pn/agrimet/chart/{}{}et.txt'
 # in km
 EARTH_RADIUS = 6371.
 
@@ -75,6 +77,208 @@ WEATHER_PARAMETRS = [('DATETIME', 'Date', '[YYYY-MM-DD]'),
 STANDARD_PARAMS = ['DateTime', '{a}_et', '{a}_etos', '{a}_etrs', '{a}_mm', '{a}_mn',
                    '{a}_mx', '{a}_pp', '{a}_pu', '{a}_sr', '{a}_ta', '{a}_tg',
                    '{a}_ua', '{a}_ud', '{a}_wg', '{a}_wr', '{a}_ym']
+ALL_STATIONS = {'abei': 'pn',
+                'acki': 'pn',
+                'afty': 'pn',
+                'agko': 'pn',
+                'ahti': 'pn',
+                'anvn': 'pn',
+                'arao': 'pn',
+                'bano': 'pn',
+                'bato': 'pn',
+                'bewo': 'pn',
+                'bfgi': 'pn',
+                'bkvo': 'pn',
+                'blbu': 'pn',
+                'blcu': 'pn',
+                'blou': 'pn',
+                'bndw': 'pn',
+                'boii': 'pn',
+                'brju': 'pn',
+                'brko': 'pn',
+                'bucu': 'pn',
+                'bvpc': 'pn',
+                'cdai': 'pn',
+                'cedc': 'pn',
+                'cedu': 'pn',
+                'chaw': 'pn',
+                'chvo': 'pn',
+                'cjdw': 'pn',
+                'ckvy': 'pn',
+                'covm': 'pn',
+                'crnu': 'pn',
+                'crsm': 'pn',
+                'crvo': 'pn',
+                'csdu': 'pn',
+                'csvu': 'pn',
+                'cvan': 'pn',
+                'defo': 'pn',
+                'deni': 'pn',
+                'drfu': 'pn',
+                'drlm': 'pn',
+                'drpw': 'pn',
+                'dtro': 'pn',
+                'ducu': 'pn',
+                'dwni': 'pn',
+                'ebri': 'pn',
+                'echo': 'pn',
+                'efhw': 'pn',
+                'elmu': 'pn',
+                'eurn': 'pn',
+                'evfu': 'pn',
+                'evty': 'pn',
+                'fafi': 'pn',
+                'faln': 'pn',
+                'flou': 'pn',
+                'fogo': 'pn',
+                'frnu': 'pn',
+                'fthi': 'pn',
+                'gcdw': 'pn',
+                'gdvi': 'pn',
+                'gerw': 'pn',
+                'gfri': 'pn',
+                'golw': 'pn',
+                'grei': 'pn',
+                'grtu': 'pn',
+                'hami': 'pn',
+                'hdru': 'pn',
+                'hero': 'pn',
+                'hntu': 'pn',
+                'hoxo': 'pn',
+                'hrfo': 'pn',
+                'hrhw': 'pn',
+                'hrmo': 'pn',
+                'huan': 'pn',
+                'ichi': 'pn',
+                'ifai': 'pn',
+                'igri': 'pn',
+                'imbo': 'pn',
+                'kflo': 'pn',
+                'kflw': 'pn',
+                'lako': 'pn',
+                'laku': 'pn',
+                'lbrw': 'pn',
+                'legw': 'pn',
+                'lewu': 'pn',
+                'lggu': 'pn',
+                'libw': 'pn',
+                'lidw': 'pn',
+                'lndn': 'pn',
+                'loau': 'pn',
+                'lofi': 'pn',
+                'loro': 'pn',
+                'mali': 'pn',
+                'masw': 'pn',
+                'mdfo': 'pn',
+                'mdki': 'pn',
+                'mdxo': 'pn',
+                'mnpi': 'pn',
+                'mnru': 'pn',
+                'moan': 'pn',
+                'mrso': 'pn',
+                'msvn': 'pn',
+                'muru': 'pn',
+                'mwso': 'pn',
+                'nepu': 'pn',
+                'nmpi': 'pn',
+                'nsvn': 'pn',
+                'odsw': 'pn',
+                'omaw': 'pn',
+                'onto': 'pn',
+                'osgi': 'pn',
+                'owei': 'pn',
+                'panu': 'pn',
+                'paro': 'pn',
+                'paru': 'pn',
+                'pcyo': 'pn',
+                'pelu': 'pn',
+                'pici': 'pn',
+                'plvu': 'pn',
+                'pmai': 'pn',
+                'pngo': 'pn',
+                'pobo': 'pn',
+                'psfi': 'pn',
+                'psti': 'pn',
+                'pvan': 'pn',
+                'pwln': 'pn',
+                'rdbm': 'pn',
+                'rdhu': 'pn',
+                'rgbi': 'pn',
+                'robi': 'pn',
+                'rogn': 'pn',
+                'roso': 'pn',
+                'rpti': 'pn',
+                'rrci': 'pn',
+                'rrii': 'pn',
+                'rthi': 'pn',
+                'rxgi': 'pn',
+                'sacw': 'pn',
+                'sbmw': 'pn',
+                'scpu': 'pn',
+                'shli': 'pn',
+                'sigm': 'pn',
+                'silw': 'pn',
+                'slwi': 'pn',
+                'smvn': 'pn',
+                'snkn': 'pn',
+                'snsu': 'pn',
+                'snwu': 'pn',
+                'span': 'pn',
+                'spfu': 'pn',
+                'spli': 'pn',
+                'spvu': 'pn',
+                'ssvn': 'pn',
+                'stvn': 'pn',
+                'sugi': 'pn',
+                'sutu': 'pn',
+                'swmn': 'pn',
+                'tabi': 'pn',
+                'teri': 'pn',
+                'tfgi': 'pn',
+                'tlkc': 'pn',
+                'trmu': 'pn',
+                'trpu': 'pn',
+                'trti': 'pn',
+                'twfi': 'pn',
+                'vecu': 'pn',
+                'vrnu': 'pn',
+                'wrdo': 'pn',
+                'gun01': 'pn',
+                'dlt01': 'pn',
+                'frt02': 'pn',
+                'gfmt': 'gp',
+                'rbym': 'gp',
+                'bfam': 'gp',
+                'bftm': 'gp',
+                'bomt': 'gp',
+                'bozm': 'gp',
+                'brgm': 'gp',
+                'brtm': 'gp',
+                'clon': 'gp',
+                'clvn': 'gp',
+                'dlnm': 'gp',
+                'glgm': 'gp',
+                'hcko': 'gp',
+                'hrlm': 'gp',
+                'hvmt': 'gp',
+                'jvwm': 'gp',
+                'ktbi': 'gp',
+                'lgiu': 'gp',
+                'lkpo': 'gp',
+                'lmmm': 'gp',
+                'matm': 'gp',
+                'mdeo': 'gp',
+                'mdno': 'gp',
+                'mdso': 'gp',
+                'mdto': 'gp',
+                'mnti': 'gp',
+                'mwsm': 'gp',
+                'svwm': 'gp',
+                'tosm': 'gp',
+                'trfm': 'gp',
+                'umhm': 'gp',
+                'olth01': 'gp',
+                'olth02': 'gp'}
 
 
 class Agrimet(object):
@@ -107,6 +311,8 @@ class Agrimet(object):
             self.end = datetime.strptime(end_date, '%Y-%m-%d')
             self.today = datetime.now()
             self.start_index = (self.today - self.start).days - 1
+
+        self.region = ALL_STATIONS[self.station]
 
     @property
     def params(self):
@@ -141,55 +347,61 @@ class Agrimet(object):
         stations = json.loads(r.text)
         return stations
 
-    def fetch_data(self, return_raw=False, out_csv_file=None, data_class='met'):
+    def fetch_met_data(self, return_raw=False, out_csv_file=None):
 
         # meteorology data
-        # 'https://www.usbr.gov/pn-bin/agrimet.pl?cbtt=drlm&interval=daily&format=1&back=1266'
-        # 'https://www.usbr.gov/pn-bin/agrimet.pl?cbtt=tosm&interval=daily&format=1&back=3718'
+        # 'https://www.usbr.gov/pn-bin/agrimet.pl?cbtt=abei&interval=daily&format=1&back=1266'
+        if self.region == 'pn':
+            url = '{}?{}'.format(AGRIMET_MET_REQ_SCRIPT_PN, self.params)
+            raw_df = read_csv(url, skip_blank_lines=True,
+                              header=0, sep=r'\,|\t', engine='python')
+        if self.region == 'gp':
+             url = 'station_code={}&water_year={}&Time_Period=YEAR&parameters=DEF+%3D+' \
+                            'Default+Set+%28ET%2CMX%2CMN%2CPP%2CSR%2CTA%2CWR%2CYM%29'.format(self.station,
+                                                                                             self.end.year,
+                                                                                             )
+
+        raw_df.index = date_range(self.start, periods=raw_df.shape[0])
+        raw_df = raw_df[to_datetime(self.start): to_datetime(self.end)]
+
+        if raw_df.shape[0] > 3:
+            self.empty_df = False
+
+        if return_raw:
+            return raw_df
+        raw_df = raw_df[[x.format(a=self.station) for x in STANDARD_PARAMS]]
+        reformed_data = self._reformat_dataframe(raw_df)
+
+        if out_csv_file:
+            reformed_data.to_csv(path_or_buf=out_csv_file)
+
+        return reformed_data
+
+    def fetch_crop_data(self, return_raw=False, out_csv_file=None):
 
         # crop water use data
         # 'https://www.usbr.gov/pn/agrimet/chart/drpw17et.txt'
 
-        if data_class == 'met':
-            url = '{}?{}'.format(AGRIMET_MET_REQ_SCRIPT, self.params)
-            raw_df = read_csv(url, skip_blank_lines=True,
-                              header=0, sep=r'\,|\t', engine='python')
+        if not self.start.year == self.end.year:
+            raise ValueError('Must choose one year for crop water use reports.')
 
-            raw_df.index = date_range(self.start, periods=raw_df.shape[0])
-            raw_df = raw_df[to_datetime(self.start): to_datetime(self.end)]
+        two_dig_yr = format(int(str(self.start.year)[-2:]), '02d')
+        url = AGRIMET_CROP_REQ_SCRIPT_PN.format(self.station, two_dig_yr)
 
-            if raw_df.shape[0] > 3:
-                self.empty_df = False
+        raw_df = read_table(url, skip_blank_lines=True, skiprows=[3], index_col=[0],
+                            header=2, engine='python', delim_whitespace=True)
+        # try:
+        #     handle date index like '0421' and '04/21'
+        start_str = format(int(raw_df.first_valid_index()), '03d')
+        et_summary_start = datetime.strptime('{}{}'.format(self.start.year, start_str), '%Y%m%d')
+        raw_df.index = date_range(et_summary_start, periods=raw_df.shape[0])
+        idx = date_range(self.start, end=self.end)
 
-            if return_raw:
-                return raw_df
-            raw_df = raw_df[[x.format(a=self.station) for x in STANDARD_PARAMS]]
-            reformed_data = self._reformat_dataframe(raw_df)
+        raw_df.replace('--', '0.0', inplace=True)
+        raw_df = raw_df.astype(float)
+        reformed_data = raw_df.reindex(idx, fill_value=0.0)
 
-            if out_csv_file:
-                reformed_data.to_csv(path_or_buf=out_csv_file)
-
-            return reformed_data
-
-        elif data_class == 'crop':
-
-            if not self.start.year == self.end.year:
-                raise ValueError('Must choose one year for crop water use reports.')
-            two_dig_yr = int(str(self.start.year)[-2:])
-            url = AGRIMET_CROP_REQ_SCRIPT.format(self.station, two_dig_yr)
-            raw_df = read_table(url, skip_blank_lines=True, skiprows=[3], index_col=[0],
-                                header=2, engine='python', delim_whitespace=True)
-
-            start_str = format(raw_df.first_valid_index(), '03d')
-            et_summary_start = datetime.strptime('{}{}'.format(self.start.year, start_str), '%Y%m%d')
-            raw_df.index = date_range(et_summary_start, periods=raw_df.shape[0])
-            idx = date_range(self.start, end=self.end)
-
-            raw_df.replace('--', '0.0', inplace=True)
-            raw_df = raw_df.astype(float)
-            reformed_data = raw_df.reindex(idx, fill_value=0.0)
-
-            return reformed_data
+        return reformed_data
 
     def _reformat_dataframe(self, df):
 

@@ -37,7 +37,7 @@ class MyTestCase(unittest.TestCase):
         agrimet = Agrimet(station=self.fetch_site, start_date=self.start,
                           end_date=self.end, interval='daily')
 
-        formed = agrimet.fetch_data()
+        formed = agrimet.fetch_met_data()
         agri_ppt = formed['PP'].values
 
         s, e = datetime.strptime(self.start, '%Y-%m-%d'), \

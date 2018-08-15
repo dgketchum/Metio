@@ -158,62 +158,62 @@ HUC_TABLES = [
     'MT_17010213']
 
 COUNTIES = [
-    # 'BE',
-    # 'BH',
-    # 'BL',
-    # 'BR',
-    # 'CA',
-    # 'CH',
-    # 'CR',
-    # 'CS',
-    # 'CU',
-    # 'DA',
-    # 'DL',
-    # 'DW',
-    # 'FA',
-    # 'FE',
+    'BE',
+    'BH',
+    'BL',
+    'BR',
+    'CA',
+    'CH',
+    'CR',
+    'CS',
+    'CU',
+    'DA',
+    'DL',
+    'DW',
+    'FA',
+    'FE',
     'FL',
-    # 'GA',
-    # 'GF',
-    # 'GL',
-    # 'GR',
-    # 'GV',
-    # 'HI',
-    # 'JB',
-    # 'JE',
-    # 'LA',
-    # 'LC',
-    # 'LI',
-    # 'LN',
-    # 'MA',
-    # 'MC',
-    # 'ME',
-    # 'MI',
-    # 'MS',
-    # 'MU',
-    # 'PA',
-    # 'PE',
-    # 'PH',
-    # 'PI',
-    # 'PO',
-    # 'PR',
-    # 'PW',
-    # 'RA',
-    # 'RI',
-    # 'RO',
-    # 'RS',
-    # 'SA',
-    # 'SB',
-    # 'SG',
-    # 'SH',
-    # 'ST',
-    # 'TE',
-    # 'TO',
-    # 'TR',
-    # 'VA',
-    # 'WH',
-    # 'WI',
-    # 'YE'
+    'GA',
+    'GF',
+    'GL',
+    'GR',
+    'GV',
+    'HI',
+    'JB',
+    'JE',
+    'LA',
+    'LC',
+    'LI',
+    'LN',
+    'MA',
+    'MC',
+    'ME',
+    'MI',
+    'MS',
+    'MU',
+    'PA',
+    'PE',
+    'PH',
+    'PI',
+    'PO',
+    'PR',
+    'PW',
+    'RA',
+    'RI',
+    'RO',
+    'RS',
+    'SA',
+    'SB',
+    'SG',
+    'SH',
+    'ST',
+    'TE',
+    'TO',
+    'TR',
+    'VA',
+    'WH',
+    'WI',
+    'YE'
 ]
 
 COUNTY_KEY = {
@@ -357,31 +357,38 @@ def get_agrimet_etr(lat, lon, yr):
                           end_date=END.format(yr), interval='daily')
         print('Station {} is {} km from given location'.format(agrimet.station,
                                                                round(agrimet.distance_from_station, 1)))
-        formed = agrimet.fetch_data(data_class='met')
+        formed = agrimet.fetch_met_data()
 
     except ParserError:
         print('Station data unavailable, falling back to Deer Lodge.')
         agrimet = Agrimet(station='drlm', start_date=START.format(yr),
                           end_date=END.format(yr), interval='daily')
-        formed = agrimet.fetch_data(data_class='met')
+        formed = agrimet.fetch_met_data()
 
     except ValueError:
         print('Station data is malformed, using Deer Lodge.')
         agrimet = Agrimet(station='drlm', start_date=START.format(yr),
                           end_date=END.format(yr), interval='daily')
-        formed = agrimet.fetch_data(data_class='met')
+        formed = agrimet.fetch_met_data()
 
     agri_etr = formed['ETRS'].groupby(lambda x: x.month).sum().values
     return agri_etr
 
 
 def get_agrimet_crop(lat, lon, yr):
-    agrimet = Agrimet(lat=lat, lon=lon, start_date=START.format(yr),
-                      end_date=END.format(yr), interval='daily')
-    formed = agrimet.fetch_data(data_class='crop')
-    # mean afalfa crop water use from in to mm
-    alfalfa = formed['ALFM'] * 25.4
+    try:
+        agrimet = Agrimet(lat=lat, lon=lon, start_date=START.format(yr),
+                          end_date=END.format(yr), interval='daily')
+        formed = agrimet.fetch_met_data()
+        # mean afalfa crop water use from in to mm
+        alfalfa = formed['ALFM'] * 25.4
 
+    except ValueError:
+        agrimet = Agrimet(station='drlm', start_date=START.format(yr),
+                          end_date=END.format(yr), interval='daily')
+        formed = agrimet.fetch_met_data()
+        # mean afalfa crop water use from in to mm
+        alfalfa = formed['ALFM'] * 25.4
     return alfalfa
 
 
