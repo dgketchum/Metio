@@ -18,15 +18,13 @@ from __future__ import print_function, absolute_import
 import io
 import json
 import requests
+from numpy import isreal, nan
 from requests.compat import urlencode, OrderedDict
 from datetime import datetime
 from fiona import collection
 from fiona.crs import from_epsg
 from geopy.distance import geodesic
 from pandas import read_table, to_datetime, date_range, read_csv, to_numeric
-import re
-from numpy import nan
-from pandas.errors import ParserError
 
 STATION_INFO_URL = 'https://www.usbr.gov/pn/agrimet/agrimetmap/usbr_map.json'
 AGRIMET_MET_REQ_SCRIPT_PN = 'https://www.usbr.gov/pn-bin/agrimet.pl'
@@ -400,7 +398,7 @@ class Agrimet(object):
 
         return reformed_data
 
-    def fetch_crop_data(self, return_raw=False, out_csv_file=None):
+    def fetch_crop_data(self, out_csv_file=None):
 
         if not self.start.year == self.end.year:
             raise ValueError('Must choose one year for crop water use reports.')
@@ -425,11 +423,20 @@ class Agrimet(object):
         idx = date_range(self.start, end=self.end)
 
         raw_df.replace('--', '0.0', inplace=True)
-        raw_df = raw_df.astype(float)
+        cols = raw_df.columns.values.tolist()
+        try:
+            raw_df = raw_df.astype(float)
+        except ValueError:
+            raw_df = (raw_df.drop(cols, axis=1).join(raw_df[cols].apply(to_numeric, errors='coerce')))
+            raw_df.interpolate(inplace=True)
+
         reformed_data = raw_df.reindex(idx, fill_value=0.0)
         cols = reformed_data.columns.values.tolist()
         for c in cols:
             reformed_data[c] *= 25.4
+
+        if out_csv_file:
+            reformed_data.to_csv(path_or_buf=out_csv_file)
 
         return reformed_data
 

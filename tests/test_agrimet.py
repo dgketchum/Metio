@@ -357,17 +357,6 @@ class TestAgrimet(unittest.TestCase):
                 else:
                     self.assertAlmostEqual(converted, unconverted, delta=0.01)
 
-    def test_web_retrieval_all_stations_met(self):
-
-        for s in self.all_stations:
-            a = Agrimet(station=s, start_date=self.start, end_date=self.end, interval='daily')
-            key = {}
-            try:
-                a.fetch_met_data()
-                print('{} appears valid'.format(a.station))
-            except:
-                print('{} appears invalid'.format(a.station))
-
     def test_great_plains_met(self):
 
         a = Agrimet(station=self.gp_site, start_date=self.start, end_date=self.end, interval='daily')
@@ -396,7 +385,7 @@ class TestAgrimet(unittest.TestCase):
 
         self.assertIsInstance(a, Agrimet)
 
-    def test_web_retrieval_all_stations_crop(self):
+    def test_web_retrieval_all_stations_met(self):
 
         for s in self.all_stations:
             a = Agrimet(station=s, start_date=self.start_season,
@@ -406,6 +395,17 @@ class TestAgrimet(unittest.TestCase):
                 print('{} appears valid'.format(a.station))
             except:
                 print('{} appears invalid'.format(a.station))
+
+    def test_web_retrieval_all_stations_crop(self):
+
+        for s in self.all_stations:
+            a = Agrimet(station=s, start_date=self.start_season,
+                        end_date=self.end_season, interval='daily')
+            # try:
+            a.fetch_crop_data()
+            print('{} appears valid'.format(a.station))
+            # except Exception as e:
+            #     print('{} appears invalid: {}'.format(a.station, e))
 
     def test_write_agrimet_shapefile(self):
 
