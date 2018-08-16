@@ -32,7 +32,7 @@ STATION_INFO_URL = 'https://www.usbr.gov/pn/agrimet/agrimetmap/usbr_map.json'
 AGRIMET_MET_REQ_SCRIPT_PN = 'https://www.usbr.gov/pn-bin/agrimet.pl'
 AGRIMET_CROP_REQ_SCRIPT_PN = 'https://www.usbr.gov/pn/agrimet/chart/{}{}et.txt'
 AGRIMET_MET_REQ_SCRIPT_GP = 'https://www.usbr.gov/gp-bin/agrimet_archives.pl'
-AGRIMET_CROP_REQ_SCRIPT_GP = 'https://www.usbr.gov/pn/agrimet/chart/{}{}et.txt'
+AGRIMET_CROP_REQ_SCRIPT_GP = 'https://www.usbr.gov/gp-bin/et_summaries.pl?station={}&year={}&submit2=++Submit++'
 # in km
 EARTH_RADIUS = 6371.
 
@@ -402,20 +402,24 @@ class Agrimet(object):
 
     def fetch_crop_data(self, return_raw=False, out_csv_file=None):
 
-        # crop water use data
-        # 'https://www.usbr.gov/pn/agrimet/chart/drpw17et.txt'
-
         if not self.start.year == self.end.year:
             raise ValueError('Must choose one year for crop water use reports.')
 
-        two_dig_yr = format(int(str(self.start.year)[-2:]), '02d')
-        url = AGRIMET_CROP_REQ_SCRIPT_PN.format(self.station, two_dig_yr)
+        if self.region == 'pn':
+            two_dig_yr = format(int(str(self.start.year)[-2:]), '02d')
+            url = AGRIMET_CROP_REQ_SCRIPT_PN.format(self.station, two_dig_yr)
+            raw_df = read_table(url, skip_blank_lines=True, skiprows=[3], index_col=[0],
+                                header=2, engine='python', delim_whitespace=True)
+            raw_df = raw_df.iloc[1:, :]
+            start_str = raw_df.first_valid_index().replace('/', '')
 
-        raw_df = read_table(url, skip_blank_lines=True, skiprows=[3], index_col=[0],
-                            header=2, engine='python', delim_whitespace=True)
-        # try:
-        #     handle date index like '0421' and '04/21'
-        start_str = format(int(raw_df.first_valid_index()), '03d')
+        if self.region == 'gp':
+            url = AGRIMET_CROP_REQ_SCRIPT_GP.format(self.station, self.start.year)
+            raw_df = read_table(url, skip_blank_lines=True, skiprows=[3], index_col=[0],
+                                header=2, engine='python', delim_whitespace=True)
+            raw_df = raw_df.iloc[2:, :]
+            start_str = format(int(raw_df.first_valid_index()), '03d')
+
         et_summary_start = datetime.strptime('{}{}'.format(self.start.year, start_str), '%Y%m%d')
         raw_df.index = date_range(et_summary_start, periods=raw_df.shape[0])
         idx = date_range(self.start, end=self.end)
@@ -423,6 +427,9 @@ class Agrimet(object):
         raw_df.replace('--', '0.0', inplace=True)
         raw_df = raw_df.astype(float)
         reformed_data = raw_df.reindex(idx, fill_value=0.0)
+        cols = reformed_data.columns.values.tolist()
+        for c in cols:
+            reformed_data[c] *= 25.4
 
         return reformed_data
 

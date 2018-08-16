@@ -352,43 +352,20 @@ def get_gridmet(start, end, lat, lon):
 
 
 def get_agrimet_etr(lat, lon, yr):
-    try:
-        agrimet = Agrimet(lat=lat, lon=lon, start_date=START.format(yr),
-                          end_date=END.format(yr), interval='daily')
-        print('Station {} is {} km from given location'.format(agrimet.station,
-                                                               round(agrimet.distance_from_station, 1)))
-        formed = agrimet.fetch_met_data()
-
-    except ParserError:
-        print('Station data unavailable, falling back to Deer Lodge.')
-        agrimet = Agrimet(station='drlm', start_date=START.format(yr),
-                          end_date=END.format(yr), interval='daily')
-        formed = agrimet.fetch_met_data()
-
-    except ValueError:
-        print('Station data is malformed, using Deer Lodge.')
-        agrimet = Agrimet(station='drlm', start_date=START.format(yr),
-                          end_date=END.format(yr), interval='daily')
-        formed = agrimet.fetch_met_data()
-
+    agrimet = Agrimet(lat=lat, lon=lon, start_date=START.format(yr),
+                      end_date=END.format(yr), interval='daily')
+    print('Station {} is {} km from given location'.format(agrimet.station,
+                                                           round(agrimet.distance_from_station, 1)))
+    formed = agrimet.fetch_met_data()
     agri_etr = formed['ETRS'].groupby(lambda x: x.month).sum().values
     return agri_etr
 
 
 def get_agrimet_crop(lat, lon, yr):
-    try:
-        agrimet = Agrimet(lat=lat, lon=lon, start_date=START.format(yr),
-                          end_date=END.format(yr), interval='daily')
-        formed = agrimet.fetch_met_data()
-        # mean afalfa crop water use from in to mm
-        alfalfa = formed['ALFM'] * 25.4
-
-    except ValueError:
-        agrimet = Agrimet(station='drlm', start_date=START.format(yr),
-                          end_date=END.format(yr), interval='daily')
-        formed = agrimet.fetch_met_data()
-        # mean afalfa crop water use from in to mm
-        alfalfa = formed['ALFM'] * 25.4
+    agrimet = Agrimet(lat=lat, lon=lon, start_date=START.format(yr),
+                      end_date=END.format(yr), interval='daily')
+    data = agrimet.fetch_met_data()
+    alfalfa = data['ALFM']
     return alfalfa
 
 

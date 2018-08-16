@@ -368,17 +368,31 @@ class TestAgrimet(unittest.TestCase):
             except:
                 print('{} appears invalid'.format(a.station))
 
-    def test_great_plains(self):
+    def test_great_plains_met(self):
 
         a = Agrimet(station=self.gp_site, start_date=self.start, end_date=self.end, interval='daily')
         df = a.fetch_met_data()
 
         self.assertIsInstance(a, Agrimet)
 
-    def test_pacific_nw(self):
+    def test_pacific_nw_met(self):
 
         a = Agrimet(station=self.pn_site, start_date=self.start, end_date=self.end, interval='daily')
         df = a.fetch_met_data()
+
+        self.assertIsInstance(a, Agrimet)
+
+    def test_great_plains_crop(self):
+
+        a = Agrimet(station=self.gp_site, start_date=self.start, end_date=self.end, interval='daily')
+        df = a.fetch_crop_data()
+
+        self.assertIsInstance(a, Agrimet)
+
+    def test_pacific_nw_crop(self):
+
+        a = Agrimet(station=self.pn_site, start_date=self.start, end_date=self.end, interval='daily')
+        df = a.fetch_crop_data()
 
         self.assertIsInstance(a, Agrimet)
 
