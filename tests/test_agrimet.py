@@ -359,14 +359,16 @@ class TestAgrimet(unittest.TestCase):
 
     def test_great_plains_met(self):
 
-        a = Agrimet(station=self.gp_site, start_date=self.start, end_date=self.end, interval='daily')
+        a = Agrimet(station=self.gp_site, start_date=self.start,
+                    end_date=self.end, interval='daily')
         df = a.fetch_met_data()
 
         self.assertIsInstance(a, Agrimet)
 
     def test_pacific_nw_met(self):
 
-        a = Agrimet(station=self.pn_site, start_date=self.start, end_date=self.end, interval='daily')
+        a = Agrimet(station=self.pn_site, start_date=self.start,
+                    end_date=self.end, interval='daily')
         df = a.fetch_met_data()
 
         self.assertIsInstance(a, Agrimet)

@@ -364,9 +364,10 @@ def get_agrimet_etr(lat, lon, yr):
 def get_agrimet_crop(lat, lon, yr):
     agrimet = Agrimet(lat=lat, lon=lon, start_date=START.format(yr),
                       end_date=END.format(yr), interval='daily')
-    data = agrimet.fetch_met_data()
+    data = agrimet.fetch_crop_data()
     alfalfa = data['ALFM']
-    return alfalfa
+    m_alfalfa = alfalfa.groupby(lambda x: x.month).sum().values
+    return m_alfalfa
 
 
 def count_irrigation_types(csv, data):
@@ -406,7 +407,9 @@ def make_empty_df():
                                        'gridmet_etr',
                                        'agrimet_etr',
                                        'ratio_grit_to_agri',
-                                       'eff_ppt',
+                                       'eff_ppt_crop_coef',
+                                       'gridmet_eff_ppt',
+                                       'agrimet_eff_ppt',
                                        'Acres_Tot',
                                        'Sq_Meters',
                                        'Acres_Irr',
@@ -457,17 +460,19 @@ def build_summary_table(source, shapes, tables, out_loc, project='oe'):
                 m_ppt, m_etr = get_gridmet(s, e, lat, lon)
                 m_agri_etr = get_agrimet_etr(lat, lon, yr)
 
-                # gridmet_eff_ppt = effective_precip(m_ppt, m_etr)
-                # m_agrimet_eff_ppt = effective_precip(m_ppt, m_agri_etr)
+                m_gridmet_eff_ppt = effective_precip(m_ppt, m_etr)
+                m_agrimet_eff_ppt = effective_precip(m_ppt, m_agri_etr)
 
-                agrimet_crop_use_eff_ppt = get_agrimet_crop(lat, lon, yr)
-                season_agri_eff_ppt = agrimet_crop_use_eff_ppt.sum()
+                m_crop_use = get_agrimet_crop(lat, lon, yr)
+                m_crop_use_eff_ppt = effective_precip(m_ppt, m_crop_use)
+                season_eff_ppt = m_crop_use_eff_ppt.sum()
 
                 season_agri_etr = m_agri_etr.sum()
-                season_ppt, season_grid_etr, season_eff_ppt = m_ppt.sum(), m_etr.sum(), agrimet_crop_use_eff_ppt.sum()
+                season_ppt, season_grid_etr = m_ppt.sum(), m_etr.sum(),
                 ratio = season_grid_etr / season_agri_etr
 
-                [data.append(x) for x in [season_ppt, season_grid_etr, season_agri_etr, ratio, season_agri_eff_ppt]]
+                [data.append(x) for x in [season_ppt, season_grid_etr, season_agri_etr, ratio, season_eff_ppt,
+                                          m_gridmet_eff_ppt.sum(), m_agrimet_eff_ppt.sum()]]
                 if project == 'oe':
                     df = oe_project_summary(df, yr, csv, season_eff_ppt, data)
 

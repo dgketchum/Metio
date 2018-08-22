@@ -361,7 +361,7 @@ class Agrimet(object):
         if self.region == 'gp':
             pairs = ','.join(['{} {}'.format(self.station.upper(), x.upper()) for x in STANDARD_PARAMS])
             url = "https://www.usbr.gov/gp-bin/webarccsv.pl?parameter={0}&syer={1}&smnth={2}&sdy={3}&" \
-                  "eyer={4}&emnth={5}&edy={6}&format=4".format(pairs,
+                  "eyer={4}&emnth={5}&edy={6}&format=2".format(pairs,
                                                                self.start.year,
                                                                self.start.month,
                                                                self.start.day,
@@ -370,11 +370,15 @@ class Agrimet(object):
                                                                self.end.day)
 
             r = requests.get(url)
-            raw_df = read_csv(io.StringIO(r.content.decode('utf-8')), header=3, index_col=0)
+            raw_df = read_table(io.StringIO(r.content.decode('utf-8')), header=19,
+                                sep=',', index_col=0)
             raw_df.rename(str.lower, axis='columns', inplace=True)
-            raw_df.replace({'NO RECORD ': ''}, regex=True, inplace=True)
+            col_names = raw_df.columns.values.tolist()
+            if len(col_names) == len(TARGET_COLUMNS):
+                col_names = [x.format(a=self.station) for x in TARGET_COLUMNS]
             cols = raw_df.columns[raw_df.dtypes.eq('object')]
             raw_df[cols] = raw_df[cols].apply(to_numeric, errors='coerce')
+            raw_df.columns = col_names
 
         raw_df.index = date_range(self.start, periods=raw_df.shape[0], name='DateTime')
         raw_df = raw_df[to_datetime(self.start): to_datetime(self.end)]
@@ -428,7 +432,8 @@ class Agrimet(object):
             raw_df = raw_df.astype(float)
         except ValueError:
             raw_df = (raw_df.drop(cols, axis=1).join(raw_df[cols].apply(to_numeric, errors='coerce')))
-            raw_df.interpolate(inplace=True)
+
+        raw_df.interpolate(inplace=True)
 
         reformed_data = raw_df.reindex(idx, fill_value=0.0)
         cols = reformed_data.columns.values.tolist()
