@@ -315,8 +315,10 @@ class Agrimet(object):
             self.end = datetime.strptime(end_date, '%Y-%m-%d')
             self.today = datetime.now()
             self.start_index = (self.today - self.start).days - 1
-
-        self.region = ALL_STATIONS[self.station]
+        try:
+            self.region = ALL_STATIONS[self.station]
+        except KeyError:
+            pass
 
     @property
     def params(self):
@@ -343,7 +345,7 @@ class Agrimet(object):
             dist = geodesic((target_lat, target_lon), (lat_stn, lon_stn)).km
             distances[stn_site_id] = dist
         k = min(distances, key=distances.get)
-        self.distance_from_station = dist
+        self.distance_from_station = distances[k]
         return k
 
     def load_stations(self):
