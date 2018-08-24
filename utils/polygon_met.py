@@ -15,13 +15,18 @@
 # ===============================================================================
 
 import os
-from pandas import read_csv, DataFrame, date_range, concat, Series
+from pandas import read_csv, DataFrame, date_range, concat, Series, isnull
 from fiona import open as fopen
 from fiona import collection
 from fiona.crs import from_epsg
 from pyproj import Proj
 from datetime import datetime
+from numpy import nan, empty
 
+from refet import calcs
+from refet.daily import Daily
+
+from met.elevation import get_elevation
 from met.thredds import GridMet
 from met.agrimet import Agrimet
 
@@ -157,30 +162,30 @@ HUC_TABLES = [
     'MT_17010213']
 
 COUNTIES = [
-    # 'BE',
-    # 'BH',
-    # 'BL',
-    # 'BR',
-    # 'CA',
-    # 'CH',
-    # 'CR',
-    # 'CS',
-    # 'CU',
-    # 'DA',
-    # 'DL',
-    # 'DW',
-    # 'FA',
-    # 'FE',
-    # 'FL',
-    # 'GA',
-    # 'GF',
-    # 'GL',
-    # 'GR',
-    # 'GV',
-    # 'HI',
-    # 'JB',
-    # 'JE',
-    # 'LA',
+    'BE',
+    'BH',
+    'BL',
+    'BR',
+    'CA',
+    'CH',
+    'CR',
+    'CS',
+    'CU',
+    'DA',
+    'DL',
+    'DW',
+    'FA',
+    'FE',
+    'FL',
+    'GA',
+    'GF',
+    'GL',
+    'GR',
+    'GV',
+    'HI',
+    'JB',
+    'JE',
+    'LA',
     'LC',
     'LI',
     'LN',
@@ -352,7 +357,7 @@ class DataCollector(Agrimet):
         self.table = table
         self.lat = lat
         self.lon = lon
-
+        self.elev = None
         self.station_rank = 0
 
     def get_gridmet(self, start, end, lat, lon):
@@ -366,14 +371,39 @@ class DataCollector(Agrimet):
         return m_ppt, m_etr
 
     def get_agrimet_etr(self, yr, first=False):
+
         agrimet = Agrimet(station=self.station, start_date=START.format(yr),
                           end_date=END.format(yr), interval='daily')
+
         formed = agrimet.fetch_met_data()
-        agri_etr = formed['ETRS'].groupby(lambda x: x.month).sum().values
+        if isnull(formed['ETRS']).values.sum() == formed['ETRS'].shape[0]:
+            agri_etr = formed['ETRS'].groupby(lambda x: x.month).sum().values
+        else:
+            agri_etr = formed['ETRS'].groupby(lambda x: x.month).sum().values
+
         if first:
+            self.elev = get_elevation(agrimet.station_coords[0], agrimet.station_coords[1])
             print('Station {}'.format(self.station))
-            print('sum etr: {}'.format(agri_etr.sum()))
-        return agri_etr
+
+        if formed['YM'].values.mean() != nan:
+            t_dew = formed['YM'].values
+            ea = calcs._sat_vapor_pressure(t_dew)[0]
+            tmin, tmax = formed['MN'].values, formed['MX'].values
+            doy = formed.index.strftime('%j').astype(int).values
+            doy = doy.reshape((len(doy), 1))[0]
+            lat = agrimet.station_coords[0]
+            rs = formed['SR'].values
+            uz = formed['UA'].values
+            zw = 2.0
+            formed['calc_etr'] = Daily(tmin=tmin, tmax=tmax, ea=ea, rs=rs, uz=uz, zw=zw, elev=self.elev,
+                                       lat=lat, doy=doy).etr()
+            calc_etr = formed['calc_etr'].groupby(lambda x: x.month).sum().values
+
+        else:
+            calc_etr = empty(agri_etr.shape)
+            calc_etr[:] = 0.0
+
+        return agri_etr, calc_etr
 
     def get_agrimet_crop(self, yr):
         agrimet = Agrimet(station=self.station, start_date=START.format(yr),
@@ -418,7 +448,8 @@ class DataCollector(Agrimet):
                                            'code',
                                            'gridmet_ppt',
                                            'gridmet_etr',
-                                           'agrimet_etr',
+                                           'agrimet_etr_pm_provided',
+                                           'agrimet_etr_calculated',
                                            'ratio_grit_to_agri',
                                            'eff_ppt_crop_coef',
                                            'gridmet_eff_ppt',
@@ -454,9 +485,9 @@ class DataCollector(Agrimet):
                     data = [self.table, None]
 
                 s, e = datetime.strptime(START.format(yr), FMT), datetime.strptime(END.format(yr), FMT)
-                lat, lon = self.station_coords[self.station][1], self.station_coords[self.station][0]
+                lat, lon = self.station_coords[self.station][0], self.station_coords[self.station][1]
                 m_ppt, m_etr = self.get_gridmet(s, e, lat, lon)
-                m_agri_etr = self.get_agrimet_etr(yr, first=first)
+                m_agri_etr, calc_etr = self.get_agrimet_etr(yr, first=first)
                 m_crop_use = self.get_agrimet_crop(yr)
 
                 m_gridmet_eff_ppt = effective_precip(m_ppt, m_etr)
@@ -468,10 +499,11 @@ class DataCollector(Agrimet):
                 s_crop_coef_eff_ppt = m_crop_use_eff_ppt.sum()
 
                 season_agri_etr = m_agri_etr.sum()
+                season_agri_etr_calc = calc_etr.sum()
                 season_ppt, season_grid_etr = m_ppt.sum(), m_etr.sum(),
                 ratio = season_grid_etr / season_agri_etr
 
-                [data.append(x) for x in [season_ppt, season_grid_etr, season_agri_etr,
+                [data.append(x) for x in [season_ppt, season_grid_etr, season_agri_etr, season_agri_etr_calc,
                                           ratio, s_crop_coef_eff_ppt,
                                           s_grid_eff_ppt, s_agri_eff_ppt]]
                 if self.project == 'oe':
@@ -484,7 +516,7 @@ class DataCollector(Agrimet):
                     Exception('Choose a valid project type.')
 
         except Exception as e:
-            print(e)
+            print('Error on station {}: {}'.format(self.station, e))
             self.station_rank += 1
             self.station = self.distances[self.station_rank][0]
             self.get_table_data()
@@ -568,7 +600,7 @@ def build_summary_table(source, shapes, tables, out_loc, project='oe'):
     master = DataFrame()
     lat, lon = None, None
     for table in source:
-        print('Processing {}'.format(table))
+        print('Processing {}'.format(COUNTY_KEY[table]))
         try:
             csv = read_csv(os.path.join(tables, '{}.csv'.format(table)))
 

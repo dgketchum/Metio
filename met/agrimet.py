@@ -18,14 +18,12 @@ from __future__ import print_function, absolute_import
 import io
 import json
 import requests
-from numpy import isreal, nan
 from requests.compat import urlencode, OrderedDict
 from datetime import datetime
 from fiona import collection
 from fiona.crs import from_epsg
 from geopy.distance import geodesic
 from pandas import read_table, to_datetime, date_range, read_csv, to_numeric
-from pandas.errors import EmptyDataError
 
 STATION_INFO_URL = 'https://www.usbr.gov/pn/agrimet/agrimetmap/usbr_map.json'
 AGRIMET_MET_REQ_SCRIPT_PN = 'https://www.usbr.gov/pn-bin/agrimet.pl'
@@ -65,7 +63,7 @@ WEATHER_PARAMETRS = [('DATETIME', 'Date', '[YYYY-MM-DD]'),
                      ('PC', 'Accumulated Precipitation Since Recharge/Reset', '[mm]'),
                      ('PP', 'Daily (24 hour) Precipitation', '[mm]'),
                      ('PU', 'Accumulated Water Year Precipitation', '[mm]'),
-                     ('SR', 'Daily Global Solar Radiation', '[W m-2]'),
+                     ('SR', 'Daily Global Solar Radiation', '[MJ m-2]'),
                      ('TA', 'Mean Daily Humidity', '[%]'),
                      ('TG', 'Growing Degree Days', '[base 50F]'),
                      ('YM', 'Mean Daily Dewpoint Temperature', '[C]'),
@@ -342,7 +340,7 @@ class Agrimet(object):
         for feat in station_data['features']:
             stn_site_id = feat['properties']['siteid']
             if stn_site_id == self.station:
-                self.station_coords = feat['geometry']['coordinates']
+                self.station_coords = feat['geometry']['coordinates'][1], feat['geometry']['coordinates'][0]
 
     def find_closest_station(self, target_lat, target_lon):
         """ The two-argument inverse tangent function.
@@ -360,7 +358,7 @@ class Agrimet(object):
             lat_stn, lon_stn = stn_crds[1], stn_crds[0]
             dist = geodesic((target_lat, target_lon), (lat_stn, lon_stn)).km
             distances[stn_site_id] = dist
-            station_coords[stn_site_id] = stn_crds
+            station_coords[stn_site_id] = lat_stn, lon_stn
         k = min(distances, key=distances.get)
         self.distances = sorted(list(distances.items()), key=lambda x: x[1])
         self.distance_from_station = distances[k]
@@ -508,7 +506,7 @@ class Agrimet(object):
                     df['WR'] *= 1609.34
                 if col == 'SR':
                     # Langleys to W m-2
-                    df['SR'] *= 41868.
+                    df['SR'] /= 23.900574
             except KeyError:
                 head_1.remove(head_1[i])
                 head_2.remove(head_2[i])
