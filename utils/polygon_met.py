@@ -16,7 +16,6 @@
 
 import os
 from pandas import read_csv, DataFrame, date_range, concat, Series
-from pandas.errors import ParserError
 from fiona import open as fopen
 from fiona import collection
 from fiona.crs import from_epsg
@@ -342,14 +341,19 @@ def make_tables(source, root):
 
 class DataCollector(Agrimet):
 
-    def __init__(self, station, project, csv):
-        Agrimet.__init__(self, station)
+    def __init__(self, project, csv, table, station=None, lat=None, lon=None):
+        Agrimet.__init__(self, station=station, lat=lat, lon=lon)
 
         self.make_empty_df()
 
         self.first = True
         self.project = project
         self.csv = csv
+        self.table = table
+        self.lat = lat
+        self.lon = lon
+
+        self.station_rank = 0
 
     def get_gridmet(self, start, end, lat, lon):
         #  gridmet params
@@ -362,18 +366,17 @@ class DataCollector(Agrimet):
         return m_ppt, m_etr
 
     def get_agrimet_etr(self, yr, first=False):
-        agrimet = Agrimet(station=stn, start_date=START.format(yr),
+        agrimet = Agrimet(station=self.station, start_date=START.format(yr),
                           end_date=END.format(yr), interval='daily')
         formed = agrimet.fetch_met_data()
         agri_etr = formed['ETRS'].groupby(lambda x: x.month).sum().values
         if first:
-            print('Station {} is {} km from given location'.format(agrimet.station,
-                                                                   round(agrimet.distance_from_station, 1)))
+            print('Station {}'.format(self.station))
             print('sum etr: {}'.format(agri_etr.sum()))
         return agri_etr
 
-    def get_agrimet_crop(self, stn, yr):
-        agrimet = Agrimet(station=stn, start_date=START.format(yr),
+    def get_agrimet_crop(self, yr):
+        agrimet = Agrimet(station=self.station, start_date=START.format(yr),
                           end_date=END.format(yr), interval='daily')
         data = agrimet.fetch_crop_data()
         alfalfa = data['ALFM']
@@ -437,47 +440,54 @@ class DataCollector(Agrimet):
         self.df = df
 
     def get_table_data(self):
-        for yr in YEARS:
+        try:
+            for yr in YEARS:
 
-            if yr == YEARS[0]:
-                first = True
-            else:
-                first = False
+                if yr == YEARS[0]:
+                    first = True
+                else:
+                    first = False
 
-            if self.project == 'co':
-                data = [COUNTY_KEY[table], table]
-            else:
-                data = [table, None]
+                if self.project == 'co':
+                    data = [COUNTY_KEY[self.table], self.table]
+                else:
+                    data = [self.table, None]
 
-            s, e = datetime.strptime(START.format(yr), FMT), datetime.strptime(END.format(yr), FMT)
-            m_ppt, m_etr = self.get_gridmet(s, e, lat, lon)
-            m_agri_etr = self.get_agrimet_etr(self.station, yr, first=first)
-            m_crop_use = self.get_agrimet_crop(self.station, yr)
+                s, e = datetime.strptime(START.format(yr), FMT), datetime.strptime(END.format(yr), FMT)
+                lat, lon = self.station_coords[self.station][1], self.station_coords[self.station][0]
+                m_ppt, m_etr = self.get_gridmet(s, e, lat, lon)
+                m_agri_etr = self.get_agrimet_etr(yr, first=first)
+                m_crop_use = self.get_agrimet_crop(yr)
 
-            m_gridmet_eff_ppt = effective_precip(m_ppt, m_etr)
-            m_agrimet_eff_ppt = effective_precip(m_ppt, m_agri_etr)
-            m_crop_use_eff_ppt = effective_precip(m_ppt, m_crop_use)
+                m_gridmet_eff_ppt = effective_precip(m_ppt, m_etr)
+                m_agrimet_eff_ppt = effective_precip(m_ppt, m_agri_etr)
+                m_crop_use_eff_ppt = effective_precip(m_ppt, m_crop_use)
 
-            s_grid_eff_ppt = m_gridmet_eff_ppt.sum()
-            s_agri_eff_ppt = m_agrimet_eff_ppt.sum()
-            s_crop_coef_eff_ppt = m_crop_use_eff_ppt.sum()
+                s_grid_eff_ppt = m_gridmet_eff_ppt.sum()
+                s_agri_eff_ppt = m_agrimet_eff_ppt.sum()
+                s_crop_coef_eff_ppt = m_crop_use_eff_ppt.sum()
 
-            season_agri_etr = m_agri_etr.sum()
-            season_ppt, season_grid_etr = m_ppt.sum(), m_etr.sum(),
-            ratio = season_grid_etr / season_agri_etr
+                season_agri_etr = m_agri_etr.sum()
+                season_ppt, season_grid_etr = m_ppt.sum(), m_etr.sum(),
+                ratio = season_grid_etr / season_agri_etr
 
-            [data.append(x) for x in [season_ppt, season_grid_etr, season_agri_etr,
-                                      ratio, s_crop_coef_eff_ppt,
-                                      s_grid_eff_ppt, s_agri_eff_ppt]]
-            if self.project == 'oe':
-                self.oe_project_summary(yr, s_crop_coef_eff_ppt, data)
+                [data.append(x) for x in [season_ppt, season_grid_etr, season_agri_etr,
+                                          ratio, s_crop_coef_eff_ppt,
+                                          s_grid_eff_ppt, s_agri_eff_ppt]]
+                if self.project == 'oe':
+                    self.oe_project_summary(yr, s_crop_coef_eff_ppt, data)
 
-            elif self.project in ['huc', 'co']:
-                self.project_summary(yr, s_crop_coef_eff_ppt, data)
+                elif self.project in ['huc', 'co']:
+                    self.project_summary(yr, s_crop_coef_eff_ppt, data)
 
-            else:
-                Exception('Choose a valid project type.')
+                else:
+                    Exception('Choose a valid project type.')
 
+        except Exception as e:
+            print(e)
+            self.station_rank += 1
+            self.station = self.distances[self.station_rank][0]
+            self.get_table_data()
 
     def project_summary(self, yr, season_eff_ppt, data_list):
         dt = datetime(int(yr), 12, 31)
@@ -500,12 +510,12 @@ class DataCollector(Agrimet):
                                        et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
 
         #  irrigation types
-        data_list = self.count_irrigation_types(self.csv, data_list)
+        data_list = self.count_irrigation_types(data_list)
         self.df.loc[dt] = data_list
 
         self.check_area(acres_tot, sq_m_tot)
 
-    def oe_project_summary(self, yr, csv, season_eff_ppt, data_list):
+    def oe_project_summary(self, yr, season_eff_ppt, data_list):
         dt = datetime(int(yr), 12, 31)
         mean_key = 'mean_{}'.format(yr)
         irr_key = 'Irr_{}'.format(yr)
@@ -538,23 +548,9 @@ class DataCollector(Agrimet):
         [data_list.append(x) for x in [mean_mm, cc_mean_mm, et_vol_yr_m3,
                                        et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
 
-        data_list = self.count_irrigation_types(self.csv, data_list)
+        data_list = self.count_irrigation_types(data_list)
         self.df.loc[dt] = data_list
         self.check_area(acres_tot, sq_m_tot)
-
-    @staticmethod
-    def state_plane_MT_to_WGS(y, x):
-        # 102300
-        nad83_MT = '+proj=lcc +lat_1=45 +lat_2=49 +lat_0=44.25 +lon_0=-109.5 ' \
-                   '+x_0=600000 +y_0=0 +ellps=GRS80 +units=m +no_defs'
-        # 32100
-        nad83_HARN_SP_MT = '+proj=lcc +lat_1=49 +lat_2=45 +lat_0=44.25 +lon_0=-109.5 +x_0=600000 ' \
-                           '+y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs'
-
-        in_proj = Proj(nad83_HARN_SP_MT, preserve_units=True)
-        x, y = in_proj(x, y, inverse=True)
-
-        return y, x
 
     @staticmethod
     def check_area(acres, sq_meters):
@@ -568,7 +564,7 @@ class DataCollector(Agrimet):
                                                    sq_meters))
 
 
-def build_summary_table(self, source, shapes, tables, out_loc, project='oe'):
+def build_summary_table(source, shapes, tables, out_loc, project='oe'):
     master = DataFrame()
     lat, lon = None, None
     for table in source:
@@ -590,17 +586,29 @@ def build_summary_table(self, source, shapes, tables, out_loc, project='oe'):
                     else:
                         lat, lon = feat['geometry']['coordinates'][1], feat['geometry']['coordinates'][0]
 
-            a = Agrimet(lat=lat, lon=lon)
-
-            d = DataCollector(project=project, csv=csv, station=a.station)
+            d = DataCollector(project=project, csv=csv, table=table, lat=lat, lon=lon)
             d.get_table_data()
 
-            master = concat([master, df])
+            master = concat([master, d.df])
 
         except FileNotFoundError:
             print('{} not found'.format(table))
 
     master.to_csv(os.path.join(out_loc, 'Irrigation_Counties.csv'), date_format='%Y')
+
+
+def state_plane_MT_to_WGS(y, x):
+    # 102300
+    nad83_MT = '+proj=lcc +lat_1=45 +lat_2=49 +lat_0=44.25 +lon_0=-109.5 ' \
+               '+x_0=600000 +y_0=0 +ellps=GRS80 +units=m +no_defs'
+    # 32100
+    nad83_HARN_SP_MT = '+proj=lcc +lat_1=49 +lat_2=45 +lat_0=44.25 +lon_0=-109.5 +x_0=600000 ' \
+                       '+y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs'
+
+    in_proj = Proj(nad83_HARN_SP_MT, preserve_units=True)
+    x, y = in_proj(x, y, inverse=True)
+
+    return y, x
 
 
 if __name__ == '__main__':

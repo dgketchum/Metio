@@ -294,6 +294,8 @@ class Agrimet(object):
         self.station_info_url = STATION_INFO_URL
         self.station = station
         self.distance_from_station = None
+        self.station_coords = None
+        self.distances = None
 
         self.empty_df = True
 
@@ -308,6 +310,9 @@ class Agrimet(object):
                 lat = (sat_image.corner_ll_lat_product + sat_image.corner_ul_lat_product) / 2
                 lon = (sat_image.corner_ll_lon_product + sat_image.corner_lr_lon_product) / 2
                 self.station = self.find_closest_station(lat, lon)
+
+        if station:
+            self.find_station_coords()
 
         self.interval = interval
 
@@ -332,6 +337,13 @@ class Agrimet(object):
             ('back', self.start_index)
         ]))
 
+    def find_station_coords(self):
+        station_data = self.load_stations()
+        for feat in station_data['features']:
+            stn_site_id = feat['properties']['siteid']
+            if stn_site_id == self.station:
+                self.station_coords = feat['geometry']['coordinates']
+
     def find_closest_station(self, target_lat, target_lon):
         """ The two-argument inverse tangent function.
         :param station_data:
@@ -340,6 +352,7 @@ class Agrimet(object):
         :return:
         """
         distances = {}
+        station_coords = {}
         station_data = self.load_stations()
         for feat in station_data['features']:
             stn_crds = feat['geometry']['coordinates']
@@ -347,9 +360,11 @@ class Agrimet(object):
             lat_stn, lon_stn = stn_crds[1], stn_crds[0]
             dist = geodesic((target_lat, target_lon), (lat_stn, lon_stn)).km
             distances[stn_site_id] = dist
+            station_coords[stn_site_id] = stn_crds
         k = min(distances, key=distances.get)
         self.distances = sorted(list(distances.items()), key=lambda x: x[1])
         self.distance_from_station = distances[k]
+        self.station_coords = station_coords
         return k
 
     def load_stations(self):
@@ -457,13 +472,6 @@ class Agrimet(object):
                             header=2, engine='python', delim_whitespace=True)
 
         raw_df = raw_df.iloc[2:, :]
-        if raw_df.empty:
-            self.rank += 1
-            self.station = self.distances[self.rank][0]
-            print('Great plains crop water retrival error on {}, moving to {}'.format(self.distances[self.rank - 1][0],
-                                                                                      self.station))
-            raw_df, start_str = self.get_gp_crop()
-
         start_str = format(int(raw_df.first_valid_index()), '03d')
         return raw_df, start_str
 
