@@ -25,6 +25,7 @@ from fiona import collection
 from fiona.crs import from_epsg
 from geopy.distance import geodesic
 from pandas import read_table, to_datetime, date_range, read_csv, to_numeric
+from pandas.errors import EmptyDataError
 
 STATION_INFO_URL = 'https://www.usbr.gov/pn/agrimet/agrimetmap/usbr_map.json'
 AGRIMET_MET_REQ_SCRIPT_PN = 'https://www.usbr.gov/pn-bin/agrimet.pl'
@@ -320,6 +321,8 @@ class Agrimet(object):
         except KeyError:
             pass
 
+        self.rank = 0
+
     @property
     def params(self):
         return urlencode(OrderedDict([
@@ -345,6 +348,7 @@ class Agrimet(object):
             dist = geodesic((target_lat, target_lon), (lat_stn, lon_stn)).km
             distances[stn_site_id] = dist
         k = min(distances, key=distances.get)
+        self.distances = sorted(list(distances.items()), key=lambda x: x[1])
         self.distance_from_station = distances[k]
         return k
 
@@ -410,19 +414,19 @@ class Agrimet(object):
             raise ValueError('Must choose one year for crop water use reports.')
 
         if self.region == 'pn':
+            # this may need a recursive scheme to go down list of closest stations
             two_dig_yr = format(int(str(self.start.year)[-2:]), '02d')
             url = AGRIMET_CROP_REQ_SCRIPT_PN.format(self.station, two_dig_yr)
             raw_df = read_table(url, skip_blank_lines=True, skiprows=[3], index_col=[0],
                                 header=2, engine='python', delim_whitespace=True)
             raw_df = raw_df.iloc[1:, :]
-            start_str = raw_df.first_valid_index().replace('/', '')
+            try:
+                start_str = raw_df.first_valid_index().replace('/', '')
+            except AttributeError:
+                start_str = format(int(raw_df.first_valid_index()), '03d')
 
         if self.region == 'gp':
-            url = AGRIMET_CROP_REQ_SCRIPT_GP.format(self.station, self.start.year)
-            raw_df = read_table(url, skip_blank_lines=True, skiprows=[3], index_col=[0],
-                                header=2, engine='python', delim_whitespace=True)
-            raw_df = raw_df.iloc[2:, :]
-            start_str = format(int(raw_df.first_valid_index()), '03d')
+            raw_df, start_str = self.get_gp_crop()
 
         et_summary_start = datetime.strptime('{}{}'.format(self.start.year, start_str), '%Y%m%d')
         raw_df.index = date_range(et_summary_start, periods=raw_df.shape[0])
@@ -446,6 +450,22 @@ class Agrimet(object):
             reformed_data.to_csv(path_or_buf=out_csv_file)
 
         return reformed_data
+
+    def get_gp_crop(self):
+        url = AGRIMET_CROP_REQ_SCRIPT_GP.format(self.station, self.start.year)
+        raw_df = read_table(url, skip_blank_lines=True, skiprows=[3], index_col=[0],
+                            header=2, engine='python', delim_whitespace=True)
+
+        raw_df = raw_df.iloc[2:, :]
+        if raw_df.empty:
+            self.rank += 1
+            self.station = self.distances[self.rank][0]
+            print('Great plains crop water retrival error on {}, moving to {}'.format(self.distances[self.rank - 1][0],
+                                                                                      self.station))
+            raw_df, start_str = self.get_gp_crop()
+
+        start_str = format(int(raw_df.first_valid_index()), '03d')
+        return raw_df, start_str
 
     def _reformat_dataframe(self, df):
 
