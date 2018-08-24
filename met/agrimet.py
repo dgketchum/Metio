@@ -280,6 +280,7 @@ ALL_STATIONS = {'abei': 'pn',
                 'tosm': 'gp',
                 'trfm': 'gp',
                 'umhm': 'gp',
+                'wssm': 'gp',
                 'olth01': 'gp',
                 'olth02': 'gp'}
 

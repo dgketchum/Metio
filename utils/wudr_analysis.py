@@ -22,6 +22,7 @@ from fiona.crs import from_epsg
 from pyproj import Proj
 from datetime import datetime
 from numpy import nan, empty
+from sklearn import linear_model
 
 from refet import calcs
 from refet.daily import Daily
@@ -39,7 +40,7 @@ TABLES = ['Broadwater_Missouri_Canal',
           'Fort_Belknap_Main_Diversion',
           'Fort_Shaw_Canal',
           'Glasgow_ID',
-          'Marshall_Canal',
+          # 'Marshall_Canal',
           'Huntley_Main_Diversion',
           'Paradise_Valley_ID',
           'Sun_River_project_Below_Pishkun',
@@ -450,7 +451,7 @@ class DataCollector(Agrimet):
                                            'gridmet_etr',
                                            'agrimet_etr_pm_provided',
                                            'agrimet_etr_calculated',
-                                           'ratio_grit_to_agri',
+                                           'ratio_agrimet_to_gridmet',
                                            'eff_ppt_crop_coef',
                                            'gridmet_eff_ppt',
                                            'agrimet_eff_ppt',
@@ -501,7 +502,9 @@ class DataCollector(Agrimet):
                 season_agri_etr = m_agri_etr.sum()
                 season_agri_etr_calc = calc_etr.sum()
                 season_ppt, season_grid_etr = m_ppt.sum(), m_etr.sum(),
-                ratio = season_grid_etr / season_agri_etr
+                ratio = season_agri_etr / season_grid_etr
+                if ratio > 10:
+                    ratio = season_agri_etr_calc / season_grid_etr
 
                 [data.append(x) for x in [season_ppt, season_grid_etr, season_agri_etr, season_agri_etr_calc,
                                           ratio, s_crop_coef_eff_ppt,
@@ -600,7 +603,7 @@ def build_summary_table(source, shapes, tables, out_loc, project='oe'):
     master = DataFrame()
     lat, lon = None, None
     for table in source:
-        print('Processing {}'.format(COUNTY_KEY[table]))
+        print('Processing {}'.format(table))
         try:
             csv = read_csv(os.path.join(tables, '{}.csv'.format(table)))
 
@@ -626,7 +629,7 @@ def build_summary_table(source, shapes, tables, out_loc, project='oe'):
         except FileNotFoundError:
             print('{} not found'.format(table))
 
-    master.to_csv(os.path.join(out_loc, 'Irrigation_Counties.csv'), date_format='%Y')
+    master.to_csv(os.path.join(out_loc, 'OE_ET_Summary.csv'), date_format='%Y')
 
 
 def state_plane_MT_to_WGS(y, x):
@@ -643,13 +646,69 @@ def state_plane_MT_to_WGS(y, x):
     return y, x
 
 
+class Withdrawals(object):
+
+    def __init__(self, diversion_data, project_et, statewide_et):
+        self.diversions = read_csv(diversion_data, header=0, index_col=0)
+        self.project_et = read_csv(project_et, header=0, index_col=0)
+        self.et = read_csv(statewide_et, header=0)
+        self.df_oe = DataFrame()
+
+        self.model = None
+        self.score = None
+        self.lm = None
+
+    def get_efficiency(self):
+        df = concat([self.diversions, self.project_et], axis=1)
+        self.df_oe = df
+        self.df_oe['efficiency'] = df['Crop_Cons_af'] / df['DIVERSION']
+        self.df_oe.drop(columns=['name'], inplace=True)
+
+    def find_regression(self, csv=None):
+        if self.df_oe.empty:
+            self.get_efficiency()
+
+        self.df_oe = self.df_oe[self.df_oe['efficiency'] < 1.]
+
+        x = self.df_oe.loc[:, 'pivot':'flood'].values
+        y = self.df_oe.loc[:, 'efficiency'].values
+        y = y.reshape((y.shape[0], 1))
+        self.lm = linear_model.LinearRegression()
+        self.model = self.lm.fit(x, y)
+        pred = self.lm.predict(x)
+        self.score = self.lm.score(x, y)
+        self.df_oe['predicted_efficiency'] = pred
+        if csv:
+            self.df_oe.to_csv(csv)
+
+    def predict_withdrawals(self, csv=None):
+
+        x = self.et.loc[:, 'pivot':'flood'].values
+        pred = self.lm.predict(x)
+        self.et['predicted_efficiency'] = pred
+
+        cc = self.et['Crop_Cons_m3'].values
+        self.et['total_withdrawal_m3'] = 1 / pred * cc.reshape((cc.shape[0], 1))
+
+        cc = self.et['Crop_Cons_af'].values
+        self.et['total_withdrawal_af'] = 1 / pred * cc.reshape((cc.shape[0], 1))
+
+        if csv:
+            self.et.to_csv(csv)
+
+
 if __name__ == '__main__':
     home = os.path.expanduser('~')
-    shapefile = os.path.join(home, 'IrrigationGIS', 'Statewide_Irrigation_Shapefile', 'county_ag_points')
-    table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports', 'county')
-    # existing = os.path.join(table, 'OE_Irrigation_Summary_2.csv')
-    # make_tables(COUNTIES, table)
-    build_summary_table(COUNTIES, shapefile, table, out_loc=table, project='co')
+    # shapefile = os.path.join(home, 'IrrigationGIS', 'Statewide_Irrigation_Shapefile', 'county_ag_points')
+    # table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports', 'county')
+    # build_summary_table(COUNTIES, shapefile, table, out_loc=table, project='co')
     # natural_sites_shp(table)
+    wudr = os.path.join(home, 'IrrigationGIS', 'wudr')
+    divert = os.path.join(wudr, 'project_withdrawals.csv')
+    oe_et = os.path.join(wudr, 'OE_ET_Summary.csv')
+    huc_et = os.path.join(wudr, 'Irrigation_HUC8.csv')
+    w = Withdrawals(diversion_data=divert, project_et=oe_et, statewide_et=huc_et)
+    w.find_regression(csv=os.path.join(wudr, 'project_efficiencies.csv'))
+    w.predict_withdrawals(csv=os.path.join(wudr, 'statewide_withdrawals.csv'))
 
 # ========================= EOF ====================================================================
