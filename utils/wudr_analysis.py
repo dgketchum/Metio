@@ -706,9 +706,9 @@ if __name__ == '__main__':
     wudr = os.path.join(home, 'IrrigationGIS', 'wudr')
     divert = os.path.join(wudr, 'project_withdrawals.csv')
     oe_et = os.path.join(wudr, 'OE_ET_Summary.csv')
-    huc_et = os.path.join(wudr, 'Irrigation_HUC8.csv')
+    huc_et = os.path.join(wudr, 'Irrigation_Counties.csv')
     w = Withdrawals(diversion_data=divert, project_et=oe_et, statewide_et=huc_et)
     w.find_regression(csv=os.path.join(wudr, 'project_efficiencies.csv'))
-    w.predict_withdrawals(csv=os.path.join(wudr, 'statewide_withdrawals.csv'))
+    w.predict_withdrawals(csv=os.path.join(wudr, 'statewide_withdrawals_co.csv'))
 
 # ========================= EOF ====================================================================
