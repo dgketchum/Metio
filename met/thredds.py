@@ -164,12 +164,16 @@ class Thredds(object):
             array = src.read(1)
             profile = src.profile
             res = src.res
-            target_res = self.target_profile['transform'].a
+            try:
+                target_affine = self.target_profile['affine']
+            except KeyError:
+                target_affine = self.target_profile['transform']
+            target_res = target_affine.a
             res_coeff = res[0] / target_res
 
             new_array = empty(shape=(1, round(array.shape[0] * res_coeff),
                                      round(array.shape[1] * res_coeff)), dtype=float32)
-            aff = src.transform
+            aff = src.affine
             new_affine = Affine(aff.a / res_coeff, aff.b, aff.c, aff.d, aff.e / res_coeff, aff.f)
 
             profile['transform'] = self.target_profile['transform']
