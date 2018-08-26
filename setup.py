@@ -33,12 +33,12 @@ with open('README.txt') as f:
 
 tag = '0.0.1'
 
-setup(name='Landsat578',
+setup(name='metio',
       version=tag,
       description='Very simple API to download gridded meteorology data from the web',
       long_description=readme,
       setup_requires=['nose>=1.0'],
-      py_modules=[],
+      py_modules=['met'],
       license='Apache',
       classifiers=[
           'Development Status :: 1 - Alpha',
@@ -53,7 +53,7 @@ setup(name='Landsat578',
       platforms='Posix; MacOS X; Windows',
       packages=[],
       download_url='https://github.com/{}/{}/archive/{}.tar.gz'.format('dgketchum', 'Metio', tag),
-      url='https://github.com/dgketchum',
+      url='https://github.com/dgketchum/metio',
       test_suite='tests.test_suite.suite',
       install_requires=['numpy', 'geopy', 'pandas', 'requests', 'fiona',
                         'future', 'xarray', 'pyproj', 'rasterio', 'xlrd',
