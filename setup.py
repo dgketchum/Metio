@@ -41,7 +41,6 @@ setup(name='metio',
       py_modules=['met'],
       license='Apache',
       classifiers=[
-          'Development Status :: 1 - Alpha',
           'Intended Audience :: Science/Research',
           'Topic :: Scientific/Engineering :: GIS',
           'License :: OSI Approved :: Apache Software License',
