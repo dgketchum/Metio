@@ -17,7 +17,7 @@ import unittest
 import os
 from datetime import datetime
 
-from met.bounds import RasterBounds
+from bounds import RasterBounds
 from met.thredds import TopoWX
 from sat_image.image import Landsat5
 

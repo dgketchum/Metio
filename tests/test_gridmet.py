@@ -23,7 +23,7 @@ from dateutil.rrule import rrule, DAILY
 from pyproj import Proj
 from numpy import mean
 
-from met.bounds import GeoBounds, RasterBounds
+from bounds import GeoBounds, RasterBounds
 from met.thredds import GridMet
 from sat_image.image import Landsat8
 

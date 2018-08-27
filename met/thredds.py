@@ -34,7 +34,7 @@ from xlrd.xldate import xldate_from_date_tuple
 from xarray import open_dataset
 from pandas import date_range, DataFrame
 
-from met.bounds import GeoBounds
+from bounds import GeoBounds
 
 with hooks():
     from urllib.parse import urlunparse
