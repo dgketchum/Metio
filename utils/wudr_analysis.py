@@ -31,6 +31,103 @@ from met.elevation import get_elevation
 from met.thredds import GridMet
 from met.agrimet import Agrimet
 
+DIVERSIONS = [58387,
+              49845,
+              46556,
+              51841,
+              67268,
+              54393,
+              12506,
+              11070,
+              9194,
+              12749,
+              11751,
+              13189,
+              35088,
+              36270,
+              34459,
+              10669,
+              18107,
+              15245,
+              6891,
+              10709,
+              9789,
+              9651,
+              9212,
+              6586,
+              22281,
+              22805,
+              23495,
+              21634,
+              18792,
+              0,
+              19074,
+              0,
+              29876,
+              20972,
+              33081,
+              31501,
+              45642,
+              52686,
+              54889,
+              39324,
+              51549,
+              39929,
+              51615,
+              47737,
+              47645,
+              44139,
+              69787,
+              71415,
+              31549,
+              39940,
+              39376,
+              10267,
+              41650,
+              28621,
+              172816,
+              143366,
+              64019,
+              109572,
+              193022,
+              160505,
+              19702,
+              15757,
+              22013,
+              18504,
+              23927,
+              18081,
+              258789,
+              279622,
+              241730,
+              253308,
+              298819,
+              254453,
+              10737,
+              13888,
+              6946,
+              17077,
+              15632,
+              10450,
+              26857,
+              21223,
+              22941,
+              25759,
+              26060,
+              18566,
+              27556,
+              22717,
+              23913,
+              29053,
+              32409,
+              25694,
+              361749,
+              350892,
+              296019,
+              197893,
+              359238,
+              306591, ]
+
 TABLES = ['Broadwater_Missouri_Canal',
           'Broadwater_Missouri_West_Side_Canal',
           'Dodson_North_Canal_Diversion',
@@ -40,7 +137,6 @@ TABLES = ['Broadwater_Missouri_Canal',
           'Fort_Belknap_Main_Diversion',
           'Fort_Shaw_Canal',
           'Glasgow_ID',
-          # 'Marshall_Canal',
           'Huntley_Main_Diversion',
           'Paradise_Valley_ID',
           'Sun_River_project_Below_Pishkun',
@@ -390,7 +486,12 @@ class DataCollector(Agrimet):
             t_dew = formed['YM'].values
             ea = calcs._sat_vapor_pressure(t_dew)[0]
             tmin, tmax = formed['MN'].values, formed['MX'].values
-            doy = formed.index.strftime('%j').astype(int).values
+
+            try:
+                doy = formed.index.strftime('%j').astype(int).values
+            except AttributeError:
+                doy = formed.index.strftime('%j').astype(int)
+
             doy = doy.reshape((len(doy), 1))[0]
             lat = agrimet.station_coords[0]
             rs = formed['SR'].values
@@ -568,6 +669,9 @@ class DataCollector(Agrimet):
                 acres_tot = self.csv['acres'].values.sum()
                 acres_irr = irr_df['acres'].values.sum()
                 area_check = irr_df['acres'].values
+                # for the case of Yellowstone has erroneous Sq Meters
+                # irr_df['Sq_Meters'] = self.csv['acres'] * 4046.86
+
         sq_m_irr = irr_df['Sq_Meters'].values.sum()
         sq_m_tot = self.csv['Sq_Meters'].values.sum()
         [data_list.append(x) for x in [acres_tot, sq_m_tot, acres_irr, sq_m_irr]]
@@ -629,7 +733,12 @@ def build_summary_table(source, shapes, tables, out_loc, project='oe'):
         except FileNotFoundError:
             print('{} not found'.format(table))
 
-    master.to_csv(os.path.join(out_loc, 'OE_ET_Summary.csv'), date_format='%Y')
+    if project == 'oe':
+        master['DIVERSIONS'] = DIVERSIONS
+        master = master[master['DIVERSIONS'] > 0.]
+        master['EFF'] = master['Crop_Cons_af'] / master['DIVERSIONS']
+
+    master.to_csv(os.path.join(out_loc, 'OE_ET_Summary_y.csv'), date_format='%Y')
 
 
 def state_plane_MT_to_WGS(y, x):
@@ -700,15 +809,17 @@ class Withdrawals(object):
 if __name__ == '__main__':
     home = os.path.expanduser('~')
     # shapefile = os.path.join(home, 'IrrigationGIS', 'Statewide_Irrigation_Shapefile', 'county_ag_points')
-    # table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports', 'county')
-    # build_summary_table(COUNTIES, shapefile, table, out_loc=table, project='co')
+    shapefile = os.path.join(home, 'IrrigationGIS', 'OE_Shapefiles')
+    table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports', 'projects')
+    # make_tables(TABLES, table)
+    build_summary_table(TABLES, shapefile, table, out_loc=table, project='oe')
     # natural_sites_shp(table)
-    wudr = os.path.join(home, 'IrrigationGIS', 'wudr')
-    divert = os.path.join(wudr, 'project_withdrawals.csv')
-    oe_et = os.path.join(wudr, 'OE_ET_Summary.csv')
-    huc_et = os.path.join(wudr, 'Irrigation_Counties.csv')
-    w = Withdrawals(diversion_data=divert, project_et=oe_et, statewide_et=huc_et)
-    w.find_regression(csv=os.path.join(wudr, 'project_efficiencies.csv'))
-    w.predict_withdrawals(csv=os.path.join(wudr, 'statewide_withdrawals_co.csv'))
+    # wudr = os.path.join(home, 'IrrigationGIS', 'wudr')
+    # divert = os.path.join(wudr, 'project_withdrawals.csv')
+    # oe_et = os.path.join(wudr, 'OE_ET_Summary.csv')
+    # huc_et = os.path.join(wudr, 'Irrigation_Counties.csv')
+    # w = Withdrawals(diversion_data=divert, project_et=oe_et, statewide_et=huc_et)
+    # w.find_regression(csv=os.path.join(wudr, 'project_efficiencies.csv'))
+    # w.predict_withdrawals(csv=os.path.join(wudr, 'statewide_withdrawals_co.csv'))
 
 # ========================= EOF ====================================================================

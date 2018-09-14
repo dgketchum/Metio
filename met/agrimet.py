@@ -407,6 +407,8 @@ class Agrimet(object):
             raw_df.drop(columns='DateTime', inplace=True)
         except KeyError:
             pass
+        except ValueError:
+            pass
 
         if raw_df.shape[0] > 3:
             self.empty_df = False
