@@ -30,10 +30,10 @@ from sat_image.image import Landsat8
 
 class TestGridMet(unittest.TestCase):
     def setUp(self):
-        self.bbox = GeoBounds(west_lon=-116.4, east_lon=-103.0,
-                              south_lat=44.3, north_lat=49.1)
+        self.bbox = GeoBounds(west=-116.4, east=-103.0,
+                              south=44.3, north=49.1)
 
-        self.var = 'pet'
+        self.var = 'etr'
         self.bad_var = 'rain'
         self.test_url_str = 'http://thredds.northwestknowledge.net:' \
                             '8080/thredds/ncss/MET/pet/pet_2011.nc?' \
@@ -76,9 +76,9 @@ class TestGridMet(unittest.TestCase):
         bounds = RasterBounds(affine_transform=l8.rasterio_geometry['transform'], profile=l8.rasterio_geometry)
         gridmet = GridMet(self.var, date=self.date, bbox=bounds,
                           target_profile=l8.rasterio_geometry, clip_feature=polygon)
-        pr = gridmet.get_data_subset()
+        pet = gridmet.get_data_subset()
         shape = 1, l8.rasterio_geometry['height'], l8.rasterio_geometry['width']
-        self.assertEqual(pr.shape, shape)
+        self.assertEqual(pet.shape, shape)
 
     def test_save_to_netcdf(self):
         """ Test save native netcdf data from Thredds.Gridmet to disk.

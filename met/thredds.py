@@ -173,7 +173,8 @@ class Thredds(object):
 
             new_array = empty(shape=(1, round(array.shape[0] * res_coeff),
                                      round(array.shape[1] * res_coeff)), dtype=float32)
-            aff = src.affine
+            aff = src.transform
+
             new_affine = Affine(aff.a / res_coeff, aff.b, aff.c, aff.d, aff.e / res_coeff, aff.f)
 
             profile['transform'] = self.target_profile['transform']
@@ -334,7 +335,8 @@ class GridMet(Thredds):
         - 'fm100' : 100-hour dead fuel moisture [%]
         - 'fm1000' : 1000-hour dead fuel moisture [%]
         - 'pdsi' : Palmer Drough Severity Index [-]
-        - 'pet' : daily reference potential evapotranspiration [mm]
+        - 'pet' : daily reference GRASS potential evapotranspiration [mm]
+        - 'etr' : daily reference ALFALFA potential evapotranspiration [mm]
         - 'pr' : daily accumulated precipitation [mm]
         - 'rmax' : daily maximum relative humidity [%]
         - 'rmin' : daily minimum relative humidity [%]
