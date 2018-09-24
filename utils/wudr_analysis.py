@@ -839,9 +839,16 @@ def count_histogram(csv_path):
     plt.show()
 
 
+def get_summary_statistics(summary_table):
+    c = read_csv(summary_table, index_col=0)
+    c['ppt_af'] = c['Acres_Tot'] * c['gridmet_ppt'] / 304.8
+    yr = c.groupby('Unnamed: 0.1').agg({'ET_af': 'sum',
+                                        'ppt_af': 'sum'})
+    pass
+
 if __name__ == '__main__':
     home = os.path.expanduser('~')
-    c = os.path.join(home, 'IrrigationGIS', 'wudr', 'figs', 'ee-chart_count_histogram.csv')
-    count_histogram(c)
+    c = os.path.join(home, 'IrrigationGIS', 'wudr', 'csv', 'statewide_withdrawals_co.csv')
+    get_summary_statistics(c)
 
 # ========================= EOF ====================================================================
