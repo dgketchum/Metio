@@ -22,6 +22,7 @@ from fiona import open as fopen
 from fiona.crs import from_epsg
 from numpy import nan, empty
 from pandas import read_csv, DataFrame, date_range, concat, Series, isnull
+from matplotlib import pyplot as plt
 from pyproj import Proj
 from refet import calcs
 from refet.daily import Daily
@@ -819,24 +820,28 @@ class Withdrawals(object):
             self.et.to_csv(csv)
 
 
-def count_histogram():
+def count_histogram(csv_path):
+    yrs = [str(x) for x in range(2008, 2014, 1)]
+    csv = read_csv(csv_path)
+    # series = [(csv[yr] * csv['Frequency']).sum() for yr in yrs]
+    # tots = [(yr, s/1000000.) for yr, s in zip(yrs, series)]
+    bins = csv['Frequency']
+    # plt.bar(bins, csv['2008'].values, alpha=0.5, label='2008')
+    # plt.bar(bins, csv['2009'].values, alpha=0.5, label='2009')
+    # plt.bar(bins, csv['2010'].values, alpha=0.5, label='2010')
+    # plt.bar(bins, csv['2011'].values, alpha=0.5, label='2011')
+    plt.bar(bins, csv['2012'].values, alpha=0.5, label='2012')
+    plt.bar(bins, csv['2013'].values, alpha=0.5, label='2013')
+    plt.xlabel('Valid Pixels During Growing Season')
+    plt.ylabel('Pixel Locations')
+    plt.legend(loc='upper right')
+    plt.savefig(os.path.join(os.path.dirname(csv_path), '2012-13 hist.png'), bbox_inches='tight')
+    plt.show()
 
 
 if __name__ == '__main__':
     home = os.path.expanduser('~')
-    # shapefile = os.path.join(home, 'IrrigationGIS', 'Statewide_Irrigation_Shapefile', 'county_ag_points')
-    shapefile = os.path.join(home, 'IrrigationGIS', 'OE_Shapefiles')
-    table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports', 'projects')
-    # make_tables(TABLES, table)
-    count_project_fields(shapefile, TABLES)
-    # build_summary_table(TABLES, shapefile, table, out_loc=table, project='oe')
-    # natural_sites_shp(table)
-    # wudr = os.path.join(home, 'IrrigationGIS', 'wudr')
-    # divert = os.path.join(wudr, 'project_withdrawals.csv')
-    # oe_et = os.path.join(wudr, 'OE_ET_Summary.csv')
-    # huc_et = os.path.join(wudr, 'Irrigation_Counties.csv')
-    # w = Withdrawals(diversion_data=divert, project_et=oe_et, statewide_et=huc_et)
-    # w.find_regression(csv=os.path.join(wudr, 'project_efficiencies.csv'))
-    # w.predict_withdrawals(csv=os.path.join(wudr, 'statewide_withdrawals_co.csv'))
+    c = os.path.join(home, 'IrrigationGIS', 'wudr', 'figs', 'ee-chart_count_histogram.csv')
+    count_histogram(c)
 
 # ========================= EOF ====================================================================
