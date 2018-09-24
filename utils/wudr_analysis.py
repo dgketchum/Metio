@@ -438,7 +438,20 @@ def make_tables(source, root):
                 s = Series(dummy_df['mean'], name='mean_{}'.format(yr))
                 df['mean_{}'.format(yr)] = s
                 s = None
-        df.to_csv(new_csv, index_label='ID')
+        # df.to_csv(new_csv, index_label='ID')
+
+
+def count_project_fields(source, tables):
+    ct = 0
+    for t in tables:
+        shp = os.path.join(source, '{}.shp'.format(t))
+        with fopen(shp, 'r') as src:
+            print(shp)
+            sub_ct = len([x for x in src])
+            ct += sub_ct
+            print(sub_ct)
+
+    print(ct)
 
 
 class DataCollector(Agrimet):
@@ -812,7 +825,8 @@ if __name__ == '__main__':
     shapefile = os.path.join(home, 'IrrigationGIS', 'OE_Shapefiles')
     table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports', 'projects')
     # make_tables(TABLES, table)
-    build_summary_table(TABLES, shapefile, table, out_loc=table, project='oe')
+    count_project_fields(shapefile, TABLES)
+    # build_summary_table(TABLES, shapefile, table, out_loc=table, project='oe')
     # natural_sites_shp(table)
     # wudr = os.path.join(home, 'IrrigationGIS', 'wudr')
     # divert = os.path.join(wudr, 'project_withdrawals.csv')
