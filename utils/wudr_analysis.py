@@ -15,21 +15,21 @@
 # ===============================================================================
 
 import os
-from pandas import read_csv, DataFrame, date_range, concat, Series, isnull
-from fiona import open as fopen
-from fiona import collection
-from fiona.crs import from_epsg
-from pyproj import Proj
 from datetime import datetime
-from numpy import nan, empty
-from sklearn import linear_model
 
+from fiona import collection
+from fiona import open as fopen
+from fiona.crs import from_epsg
+from numpy import nan, empty
+from pandas import read_csv, DataFrame, date_range, concat, Series, isnull
+from pyproj import Proj
 from refet import calcs
 from refet.daily import Daily
+from sklearn import linear_model
 
+from met.agrimet import Agrimet
 from met.elevation import get_elevation
 from met.thredds import GridMet
-from met.agrimet import Agrimet
 
 DIVERSIONS = [58387,
               49845,
@@ -817,6 +817,9 @@ class Withdrawals(object):
 
         if csv:
             self.et.to_csv(csv)
+
+
+def count_histogram():
 
 
 if __name__ == '__main__':
