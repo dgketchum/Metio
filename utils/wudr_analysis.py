@@ -20,9 +20,9 @@ from datetime import datetime
 from fiona import collection
 from fiona import open as fopen
 from fiona.crs import from_epsg
+from matplotlib import pyplot as plt
 from numpy import nan, empty
 from pandas import read_csv, DataFrame, date_range, concat, Series, isnull
-from matplotlib import pyplot as plt
 from pyproj import Proj
 from refet import calcs
 from refet.daily import Daily
@@ -804,17 +804,25 @@ class Withdrawals(object):
         if csv:
             self.df_oe.to_csv(csv)
 
-    def predict_withdrawals(self, csv=None):
+    def predict_withdrawals(self, csv=None, predict=False, **eff_values):
 
         x = self.et.loc[:, 'pivot':'flood'].values
-        pred = self.lm.predict(x)
-        self.et['predicted_efficiency'] = pred
+        if predict:
+            pred = self.lm.predict(x)
+            self.et['predicted_efficiency'] = pred
 
-        cc = self.et['Crop_Cons_m3'].values
-        self.et['total_withdrawal_m3'] = 1 / pred * cc.reshape((cc.shape[0], 1))
+            cc = self.et['Crop_Cons_m3'].values
+            self.et['total_withdrawal_lr_m3'] = 1 / pred * cc.reshape((cc.shape[0], 1))
 
-        cc = self.et['Crop_Cons_af'].values
-        self.et['total_withdrawal_af'] = 1 / pred * cc.reshape((cc.shape[0], 1))
+            cc = self.et['Crop_Cons_af'].values
+            self.et['total_withdrawal_lr_af'] = 1 / pred * cc.reshape((cc.shape[0], 1))
+
+        if eff_values:
+            self.et['wp'] = self.et['pivot'].values * self.et['Crop_Cons_m3'].values / eff_values['pivot']
+            self.et['ws'] = self.et['sprinkler'].values * self.et['Crop_Cons_m3'].values / eff_values['sprinkler']
+            self.et['wf'] = self.et['flood'].values * self.et['Crop_Cons_m3'].values / eff_values['flood']
+            self.et['total_withdrawal_m3'] = self.et['wp'] + self.et['wf'] + self.et['ws']
+            self.et['total_withdrawal_af'] = self.et['total_withdrawal_m3'] / 1233.48
 
         if csv:
             self.et.to_csv(csv)
@@ -846,9 +854,22 @@ def get_summary_statistics(summary_table):
                                         'ppt_af': 'sum'})
     pass
 
+
 if __name__ == '__main__':
     home = os.path.expanduser('~')
-    c = os.path.join(home, 'IrrigationGIS', 'wudr', 'csv', 'statewide_withdrawals_co.csv')
-    get_summary_statistics(c)
+    # shapefile = os.path.join(home, 'IrrigationGIS', 'Statewide_Irrigation_Shapefile', 'county_ag_points')
+    shapefile = os.path.join(home, 'IrrigationGIS', 'OE_Shapefiles')
+    table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports', 'projects')
+    # make_tables(TABLES, table)
+    # build_summary_table(TABLES, shapefile, table, out_loc=table, project='oe')
+    # natural_sites_shp(table)
+    wudr = os.path.join(home, 'IrrigationGIS', 'wudr', 'csv')
+    divert = os.path.join(wudr, 'project_withdrawals.csv')
+    oe_et = os.path.join(wudr, 'OE_ET_Summary.csv')
+    huc_et = os.path.join(wudr, 'Irrigation_HUC8.csv')
+    w = Withdrawals(diversion_data=divert, project_et=oe_et, statewide_et=huc_et)
+    kw = {'flood': 0.30, 'sprinkler': 0.30, 'pivot': 0.45}
+    w.find_regression(csv=os.path.join(wudr, 'project_efficiencies.csv'))
+    w.predict_withdrawals(csv=os.path.join(wudr, 'MT_Withdrawals_28SEPT2018.csv'), **kw)
 
 # ========================= EOF ====================================================================
