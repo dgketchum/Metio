@@ -847,12 +847,14 @@ def count_histogram(csv_path):
     plt.show()
 
 
-def get_summary_statistics(summary_table):
-    c = read_csv(summary_table, index_col=0)
+def statewide_annual_statistics(csv, out):
+    c = read_csv(csv, index_col=0)
     c['ppt_af'] = c['Acres_Tot'] * c['gridmet_ppt'] / 304.8
     yr = c.groupby('Unnamed: 0.1').agg({'ET_af': 'sum',
-                                        'ppt_af': 'sum'})
-    pass
+                                        'ppt_af': 'sum',
+                                        'Crop_Cons_af': 'sum',
+                                        'total_withdrawal_af': 'sum'})
+    yr.to_csv(out)
 
 
 if __name__ == '__main__':
@@ -864,12 +866,15 @@ if __name__ == '__main__':
     # build_summary_table(TABLES, shapefile, table, out_loc=table, project='oe')
     # natural_sites_shp(table)
     wudr = os.path.join(home, 'IrrigationGIS', 'wudr', 'csv')
-    divert = os.path.join(wudr, 'project_withdrawals.csv')
-    oe_et = os.path.join(wudr, 'OE_ET_Summary.csv')
-    huc_et = os.path.join(wudr, 'Irrigation_HUC8.csv')
-    w = Withdrawals(diversion_data=divert, project_et=oe_et, statewide_et=huc_et)
-    kw = {'flood': 0.30, 'sprinkler': 0.30, 'pivot': 0.45}
-    w.find_regression(csv=os.path.join(wudr, 'project_efficiencies.csv'))
-    w.predict_withdrawals(csv=os.path.join(wudr, 'MT_Withdrawals_28SEPT2018.csv'), **kw)
+    # divert = os.path.join(wudr, 'project_withdrawals.csv')
+    # oe_et = os.path.join(wudr, 'OE_ET_Summary.csv')
+    # huc_et = os.path.join(wudr, 'Irrigation_HUC8.csv')
+    # w = Withdrawals(diversion_data=divert, project_et=oe_et, statewide_et=huc_et)
+    # kw = {'flood': 0.30, 'sprinkler': 0.30, 'pivot': 0.45}
+    # w.find_regression(csv=os.path.join(wudr, 'project_efficiencies.csv'))
+    statewide_csv = os.path.join(wudr, 'MT_Withdrawals_28SEPT2018.csv')
+    statewide_summary_annual = os.path.join(wudr, 'MT_statwide_annual_summary.csv')
+    # w.predict_withdrawals(csv=statewide_csv, **kw)
+    statewide_annual_statistics(statewide_csv, statewide_summary_annual)
 
 # ========================= EOF ====================================================================
