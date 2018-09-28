@@ -108,5 +108,3 @@ tests/temp/
 scene_list/
 spatial_data/MT
 tests/data/
-met/eddy_flux.py
-utils/wudr_analysis.py
