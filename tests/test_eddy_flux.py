@@ -26,8 +26,8 @@ from met.eddy_flux import FluxSite
 
 class EddyTowerTestCase(unittest.TestCase):
     def setUp(self):
-        self.data_save_loc = 'tests/data/flux_locations_lathuille.json'
-        self.data_perm = 'met/data/flux_locations_lathuille.json'
+        self.data_save_loc = 'tests/data/points/flux_locations_lathuille.json'
+        self.data_perm = 'met/data/points/flux_locations_lathuille.json'
         self.select_sites = ['BR']
         self.shape_out = 'met/data/flux_locations_lathuille.shp'
         self.site = 'US-FPe'
