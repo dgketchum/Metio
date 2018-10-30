@@ -146,6 +146,25 @@ TABLES = ['Broadwater_Missouri_Canal',
           'West_Bench_Canal',
           'Yellowstone_Main_Diversion']
 
+INTERSECTING_HUC_OE = {
+    '10030101': ['Broadwater_Missouri_Canal',
+                 'Broadwater_Missouri_West_Side_Canal'],
+    '17010202': ['East_Fork_Main_Canal_ab_Trout_Creek'],
+    '10030205': ['Eldorado'],
+    '10030104': ['Floweree_and_Floweree_Hamilton',
+                 'Sun_River_project_Below_Pishkun',
+                 'Fort_Shaw_Canal'],
+    '10050004': ['Fort_Belknap_Main_Diversion',
+                 'Paradise_Valley_ID',
+                 'Dodson_North_Canal_Diversion'],
+    '10050012': ['Glasgow_ID'],
+    '10070007': ['Huntley_Main_Diversion'],
+    '10040201': ['Two_Dot_Canal'],
+    '10020003': ['Vigilante_Canal',
+                 'West_Bench_Canal'],
+    '10100004': ['Yellowstone_Main_Diversion']
+}
+
 NATURAL_SITES = {'Broadwater_Missouri_Canal': (-111.436, 46.330),
                  'Broadwater_Missouri_West_Side_Canal': (-111.52093, 46.19899),
                  'Dodson_North_Canal_Diversion': (-108.09676, 48.38433),
@@ -571,6 +590,8 @@ class DataCollector(Agrimet):
                                            'gridmet_eff_ppt',
                                            'agrimet_eff_ppt',
                                            'Acres_Tot',
+                                           'Acres_Project',
+                                           'Projects',
                                            'Sq_Meters',
                                            'Acres_Irr',
                                            'Sq_Meters_Irr',
@@ -597,6 +618,8 @@ class DataCollector(Agrimet):
 
                 if self.project == 'co':
                     data = [COUNTY_KEY[self.table], self.table]
+                elif self.project == 'huc':
+                    data = [self.table.replace('MT_', ''), None]
                 else:
                     data = [self.table, None]
 
@@ -642,13 +665,33 @@ class DataCollector(Agrimet):
     def project_summary(self, yr, season_eff_ppt, data_list):
         dt = datetime(int(yr), 12, 31)
         mean_key = 'mean_{}'.format(yr)
-        acres_tot = self.csv['ACRES'].values.sum()
+
+        try:
+            acres_tot = self.csv['ACRES'].values.sum()
+        except KeyError:
+            acres_tot = self.csv['Acres'].values.sum()
+
+        if self.project == 'huc' and 'WUDR OE Proj' in list(self.csv['UNIT'].unique()):
+            print('{} GIS: {}'.format(self.table, self.csv['UNIT'].unique()))
+            proj_df = self.csv[self.csv['UNIT'] == 'WUDR OE Proj']
+            try:
+                acres_proj = proj_df['ACRES'].values.sum()
+            except KeyError:
+                acres_proj = proj_df['Acres'].values.sum()
+            acres_tot -= acres_proj
+        else:
+            acres_proj = 0.0
+
+        if self.table in INTERSECTING_HUC_OE.keys():
+            intersect_project = INTERSECTING_HUC_OE[self.table]
+        else:
+            intersect_project = None
+
         acres_irr = acres_tot
         sq_m_tot = self.csv['Sq_Meters'].values.sum()
         sq_m_irr = sq_m_tot
-        [data_list.append(x) for x in [acres_tot, sq_m_tot, acres_irr, sq_m_irr]]
+        [data_list.append(x) for x in [acres_tot, acres_proj, intersect_project, sq_m_tot, acres_irr, sq_m_irr]]
 
-        # irrigation volumes
         mean_mm = (self.csv[mean_key] * self.csv['Sq_Meters'] / self.csv['Sq_Meters'].values.sum()).values.sum()
         cc_mean_mm = mean_mm - season_eff_ppt
         et_vol_yr_m3 = (self.csv['Sq_Meters'] * self.csv[mean_key] / 1000.).values.sum()
@@ -660,6 +703,7 @@ class DataCollector(Agrimet):
                                        et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
 
         #  irrigation types
+
         data_list = self.count_irrigation_types(data_list)
         self.df.loc[dt] = data_list
 
@@ -752,7 +796,7 @@ def build_summary_table(source, shapes, tables, out_loc, project='oe'):
         master = master[master['DIVERSIONS'] > 0.]
         master['EFF'] = master['Crop_Cons_af'] / master['DIVERSIONS']
 
-    master.to_csv(os.path.join(out_loc, 'OE_ET_Summary_y.csv'), date_format='%Y')
+    master.to_csv(os.path.join(out_loc, 'HUC_8_wProjects.csv'), date_format='%Y')
 
 
 def state_plane_MT_to_WGS(y, x):
@@ -859,22 +903,10 @@ def statewide_annual_statistics(csv, out):
 
 if __name__ == '__main__':
     home = os.path.expanduser('~')
-    # shapefile = os.path.join(home, 'IrrigationGIS', 'Statewide_Irrigation_Shapefile', 'county_ag_points')
-    shapefile = os.path.join(home, 'IrrigationGIS', 'OE_Shapefiles')
-    table = os.path.join(home, 'IrrigationGIS', 'ssebop_exports', 'projects')
-    # make_tables(TABLES, table)
-    # build_summary_table(TABLES, shapefile, table, out_loc=table, project='oe')
-    # natural_sites_shp(table)
-    wudr = os.path.join(home, 'IrrigationGIS', 'wudr', 'csv')
-    # divert = os.path.join(wudr, 'project_withdrawals.csv')
-    # oe_et = os.path.join(wudr, 'OE_ET_Summary.csv')
-    # huc_et = os.path.join(wudr, 'Irrigation_HUC8.csv')
-    # w = Withdrawals(diversion_data=divert, project_et=oe_et, statewide_et=huc_et)
-    # kw = {'flood': 0.30, 'sprinkler': 0.30, 'pivot': 0.45}
-    # w.find_regression(csv=os.path.join(wudr, 'project_efficiencies.csv'))
-    statewide_csv = os.path.join(wudr, 'MT_Withdrawals_28SEPT2018.csv')
-    statewide_summary_annual = os.path.join(wudr, 'MT_statwide_annual_summary.csv')
-    # w.predict_withdrawals(csv=statewide_csv, **kw)
-    statewide_annual_statistics(statewide_csv, statewide_summary_annual)
+    huc_shapefile = os.path.join(home, 'IrrigationGIS', 'Montana',
+                                 'Statewide_Irrigation_Shapefile', 'by_huc_8')
+
+    table = os.path.join(home, 'ssebop', 'ssebop_exports', 'statewide')
+    build_summary_table(HUC_TABLES, huc_shapefile, table, out_loc=table, project='huc')
 
 # ========================= EOF ====================================================================

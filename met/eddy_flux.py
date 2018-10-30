@@ -15,14 +15,17 @@
 # =============================================================================================
 from __future__ import print_function, absolute_import
 
-import os
 import json
-import requests
-from fiona.crs import from_epsg
-from fiona import collection
-from bs4 import BeautifulSoup as bs
-from pandas import read_csv, date_range, DataFrame, concat
+import os
 from datetime import datetime as dt
+from zipfile import ZipFile, BadZipFile
+
+import requests
+from bs4 import BeautifulSoup as bs
+from fiona import collection
+from fiona.crs import from_epsg
+from pandas import read_csv, date_range, DataFrame, concat
+
 from met.lathuille_variables import get_lathuille_variables as lathuille
 
 
@@ -225,8 +228,10 @@ class FluxSite(object):
                                   'csv_url': site_dict[key]['Site_name'],
                                   'Years Of Data Available': site_dict[key]['Years Of Data Available']}})
 
-if __name__ == '__main__':
-    flux = FluxSite()
-    flux.build_network_json()
 
-    # ========================= EOF ====================================================================
+if __name__ == '__main__':
+    home = os.path.expanduser('~')
+    data_dir = os.path.join(home, 'EC_data', 'forDavidKetchum', '2015Flux')
+    unzip_data(data_dir)
+
+# ========================= EOF ====================================================================
