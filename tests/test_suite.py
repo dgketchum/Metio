@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
-
 import unittest
 
 
@@ -21,10 +20,10 @@ def suite():
 
     print('Testing.......................................')
 
-    from utils import TestGridMet
-    from utils import TestAgrimet
-    from utils import EddyTowerTestCase
-    from utils import TestTopoWX
+    from tests.test_gridmet import TestGridMet
+    from tests.test_agrimet import TestAgrimet
+    from tests.test_eddy_flux import EddyTowerTestCase
+    from tests.test_topowx import TestTopoWX
 
     loader = unittest.TestLoader()
     test_suite = unittest.TestSuite()
