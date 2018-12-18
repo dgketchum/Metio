@@ -20,7 +20,6 @@ from datetime import datetime
 from fiona import collection
 from fiona import open as fopen
 from fiona.crs import from_epsg
-# from matplotlib import pyplot as plt
 from numpy import nan, empty
 from pandas import read_csv, DataFrame, date_range, concat, Series, isnull
 from pyproj import Proj

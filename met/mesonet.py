@@ -17,7 +17,10 @@
 import os
 from pprint import pprint
 
+from numpy import log
 from pandas import read_csv, to_datetime
+from refet import calcs
+from refet.daily import Daily
 
 COLUMNS = ['Timestamp',
            'W/m² Solar Radiation',
@@ -87,7 +90,6 @@ RENAME_COLS = {'Solar Radiation': 'W/m²',
 
 def parse_mesonet(csv):
     csv = read_csv(csv, header=2)
-
     for x, y in zip(COLUMNS, csv.columns):
         assert x == y, 'Incoming csv doesnt match expected format'.format(
             pprint(COLUMNS, depth=1))
@@ -95,7 +97,28 @@ def parse_mesonet(csv):
     csv.index = to_datetime(csv['Timestamp'], format='%m/%d/%Y %H:%M')
     csv.drop(columns=['Timestamp'], inplace=True)
     csv.columns = RENAME_COLS.keys()
+    csv['etr'] = mesonet_etr(csv, lat=46.3)
     return csv
+
+
+def mesonet_etr(df, lat=46.3, elevation=1000):
+    doy = df.index.strftime('%j').astype(int)
+    t_dew = dewpoint_temp(df['Vapor Pressure']).values
+    ea = calcs._sat_vapor_pressure(t_dew)
+    tmin, tmax = df['MN'].values, df['MX'].values
+    doy = doy.reshape((len(doy), 1))[0]
+    rs = df['SR'].values
+    uz = df['UA'].values
+    zw = 2.0
+    df['calc_etr'] = Hourly(tmin=tmin, tmax=tmax, ea=ea, rs=rs, uz=uz, zw=zw, elev=elevation,
+                            lat=lat, doy=doy).etr()
+    calc_etr = formed['calc_etr'].groupby(lambda x: x.month).sum().values
+    return calc_etr
+
+
+def dewpoint_temp(e):
+    dew_temp = (log(e) + 0.4926) / (0.0708 - 0.00421 * log(e))
+    return dew_temp
 
 
 if __name__ == '__main__':

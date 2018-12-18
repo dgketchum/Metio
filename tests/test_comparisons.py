@@ -1,3 +1,4 @@
+import os
 import unittest
 from datetime import datetime
 
@@ -71,8 +72,10 @@ class MyTestCase(unittest.TestCase):
         gridmet_etr = gridmet.get_point_timeseries()
         gridmet_etr = gridmet_etr.values
 
-        plt.plot(gridmet_etr, label='gridmet')
-        plt.plot(agri_etr, label='agrimet')
+        mesonet = parse_mesonet(self.covm_mco)
+
+        plt.plot(gridmet_etr[100:250], label='gridmet')
+        plt.plot(agri_etr[100:250], label='agrimet')
         plt.legend()
         plt.show()
         ratio = gridmet_etr.sum() / agri_etr.sum()
