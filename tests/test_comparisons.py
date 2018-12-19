@@ -7,18 +7,19 @@ from matplotlib import pyplot as plt
 
 from met.agrimet import Agrimet
 from met.thredds import GridMet
-from met.mesonet import parse_mesonet
+from met.mesonet import Mesonet
 
 
 class MyTestCase(unittest.TestCase):
 
     def setUp(self):
         self.fetch_site = 'covm'
-        self.start = '2015-01-01'
-        self.end = '2015-12-31'
+        self.start = '2017-01-01'
+        self.end = '2017-12-31'
         self.lat = 46.34
         self.lon = -112.77
         self.covm_mco = 'ARC-W Corvallis(06-00151).csv'
+
 
     def test_agrimet_gridmet_precip(self):
         agrimet = Agrimet(station=self.fetch_site, start_date=self.start,
@@ -72,14 +73,19 @@ class MyTestCase(unittest.TestCase):
         gridmet_etr = gridmet.get_point_timeseries()
         gridmet_etr = gridmet_etr.values
 
-        mesonet = parse_mesonet(self.covm_mco)
+        mco = Mesonet(self.covm_mco, start=self.start, end=self.end)
+        mesonet_daily = mco.mesonet_etr(lat=46.3, elevation=1000.0)
+        mesonet_etr = mesonet_daily['ETR'].values
 
         plt.plot(gridmet_etr[100:250], label='gridmet')
+        plt.plot(mesonet_etr[100:250], label='mesonet')
         plt.plot(agri_etr[100:250], label='agrimet')
         plt.legend()
         plt.show()
-        ratio = gridmet_etr.sum() / agri_etr.sum()
-        print('ratio: {}'.format(ratio))
+        ga_ratio = gridmet_etr.sum() / agri_etr.sum()
+        print('gridmet - agrimet ratio: {}'.format(ga_ratio))
+        ma_ratio = mesonet_etr.sum() / agri_etr.sum()
+        print('mesonet - agrimet ratio: {}'.format(ma_ratio))
 
 
 if __name__ == '__main__':

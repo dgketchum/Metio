@@ -18,7 +18,7 @@ import os
 from pprint import pprint
 
 from numpy import log
-from pandas import read_csv, to_datetime
+from pandas import read_csv, to_datetime, DataFrame
 from refet import calcs
 from refet.daily import Daily
 
@@ -88,32 +88,47 @@ RENAME_COLS = {'Solar Radiation': 'W/m²',
                'Logger Temperature': 'deg C'}
 
 
-def parse_mesonet(csv):
-    csv = read_csv(csv, header=2)
-    for x, y in zip(COLUMNS, csv.columns):
-        assert x == y, 'Incoming csv doesnt match expected format'.format(
-            pprint(COLUMNS, depth=1))
+class Mesonet(object):
 
-    csv.index = to_datetime(csv['Timestamp'], format='%m/%d/%Y %H:%M')
-    csv.drop(columns=['Timestamp'], inplace=True)
-    csv.columns = RENAME_COLS.keys()
-    csv['etr'] = mesonet_etr(csv, lat=46.3)
-    return csv
+    def __init__(self, csv, start=None, end=None):
 
+        self.csv = csv
+        self.start = start
+        self.end = end
+        self.table = None
+        self.df = None
+        self._parse_csv()
 
-def mesonet_etr(df, lat=46.3, elevation=1000):
-    doy = df.index.strftime('%j').astype(int)
-    t_dew = dewpoint_temp(df['Vapor Pressure']).values
-    ea = calcs._sat_vapor_pressure(t_dew)
-    tmin, tmax = df['MN'].values, df['MX'].values
-    doy = doy.reshape((len(doy), 1))[0]
-    rs = df['SR'].values
-    uz = df['UA'].values
-    zw = 2.0
-    df['calc_etr'] = Hourly(tmin=tmin, tmax=tmax, ea=ea, rs=rs, uz=uz, zw=zw, elev=elevation,
-                            lat=lat, doy=doy).etr()
-    calc_etr = formed['calc_etr'].groupby(lambda x: x.month).sum().values
-    return calc_etr
+    def _parse_csv(self):
+
+        self.table = read_csv(self.csv, header=2)
+        for x, y in zip(COLUMNS, self.table.columns):
+            assert x == y, 'Incoming csv doesnt match expected format'.format(
+                pprint(COLUMNS, depth=1))
+
+        self.table.index = to_datetime(self.table['Timestamp'], format='%m/%d/%Y %H:%M')
+        self.table.drop(columns=['Timestamp'], inplace=True)
+        self.table.columns = RENAME_COLS.keys()
+
+        if self.start and self.end:
+            self.table = self.table.ix[self.start: self.end]
+
+    def mesonet_etr(self, lat=46.3, elevation=1000):
+        t_dew = dewpoint_temp(self.table['Vapor Pressure'].resample('D').mean().values)
+        ea = calcs._sat_vapor_pressure(t_dew)
+        tmax_series = self.table['Air Temperature']
+        tmax = tmax_series.resample('D').max().values
+        tmin = self.table['Air Temperature'].resample('D').min().values
+        daily = tmax_series.resample('D').mean()
+        doy = daily.index.strftime('%j').astype(int).values
+        rs = self.table['Solar Radiation'].resample('D').mean().values * 0.0864
+        uz = self.table['Wind Speed'].resample('D').mean().values
+        zw = 2.4
+        etr = Daily(tmin=tmin, tmax=tmax, ea=ea, rs=rs, uz=uz, zw=zw, elev=elevation,
+                    lat=lat, doy=doy).etr()
+        self.df = DataFrame(data=[doy, rs, etr, uz, ea, t_dew, tmax, tmin]).transpose()
+        self.df.columns = ['DOY', 'SR', 'ETR', 'UZ', 'EA', 'TDew', 'TMax', 'TMin']
+        return self.df
 
 
 def dewpoint_temp(e):
@@ -123,7 +138,4 @@ def dewpoint_temp(e):
 
 if __name__ == '__main__':
     home = os.path.expanduser('~')
-    mes_dir = os.path.join(home, 'IrrigationGIS', 'lolo', 'mesonet')
-    _file = os.path.join(mes_dir, 'MBMG LL 148(06-00148).csv')
-    parse_mesonet(_file)
 # ========================= EOF ====================================================================
