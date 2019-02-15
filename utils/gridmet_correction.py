@@ -1,0 +1,61 @@
+# ===============================================================================
+# Copyright 2018 dgketchum
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ===============================================================================
+
+import os
+from datetime import datetime
+
+from matplotlib import pyplot as plt
+
+from met.mesonet import Mesonet
+from met.thredds import GridMet
+
+
+def correct_mesonet_w_gridmet(start, end, lat, lon):
+    s, e = datetime.strptime(start, '%Y-%m-%d'), \
+           datetime.strptime(end, '%Y-%m-%d')
+    gridmet = GridMet('etr', start=s, end=e,
+                      lat=lat, lon=lon)
+    gridmet_etr = gridmet.get_point_timeseries()
+    gridmet_etr = gridmet_etr.values
+
+    mco = Mesonet(LOLO_MCO, start=start, end=end)
+    mesonet_daily = mco.mesonet_etr(lat=46.3, elevation=1000.0)
+    mesonet_etr = mesonet_daily['ETR'].values
+
+    plt.plot(gridmet_etr[121:273], label='gridmet')
+    plt.plot(mesonet_etr[121:273], label='mesonet')
+    plt.xlabel('GROWING SEASON DAY (MAY 01 - SEP 30)')
+    plt.ylabel('Tall Crop Reference ET (mm) daily')
+    plt.legend()
+    plt.show()
+
+    ma_ratio = mesonet_etr[121:273].sum() / gridmet_etr[121:273].sum()
+    print('mesonet - gridmet ratio: {}'.format(ma_ratio))
+    ma_ratio = gridmet_etr[121:273].sum() / mesonet_etr[121:273].sum()
+    print('gridmet - mesonet ratio: {}'.format(ma_ratio))
+
+
+if __name__ == '__main__':
+    home = os.path.expanduser('~')
+    for yr in ['2017', '2018']:
+        START = '{}-01-01'.format(yr)
+        END = '{}-12-31'.format(yr)
+        LAT = 46.748
+        LON = -114.13
+        LOLO_MCO = os.path.join(home, 'IrrigationGIS', 'lolo',
+                                'mesonet', 'Lolo Campground Weather MCO 2018.csv')
+        correct_mesonet_w_gridmet(START, END, LAT, LON)
+# ========================= EOF ====================================================================
