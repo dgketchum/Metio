@@ -20,7 +20,6 @@ class MyTestCase(unittest.TestCase):
         self.lon = -112.77
         self.covm_mco = 'ARC-W Corvallis(06-00151).csv'
 
-
     def test_agrimet_gridmet_precip(self):
         agrimet = Agrimet(station=self.fetch_site, start_date=self.start,
                           end_date=self.end, interval='daily')
@@ -52,10 +51,11 @@ class MyTestCase(unittest.TestCase):
         gridmet_etr = gridmet.get_point_timeseries()
         gridmet_etr = gridmet_etr.values
 
-        plt.plot(gridmet_etr, label='gridmet')
-        plt.plot(agri_etr, label='agrimet')
-        plt.legend()
-        plt.show()
+        # plt.plot(gridmet_etr, label='gridmet')
+        # plt.plot(agri_etr, label='agrimet')
+        # plt.legend()
+        # plt.show()
+        # plt.close()
         ratio = agri_etr.sum() / gridmet_etr.sum()
         print('ratio: {}'.format(ratio))
 
@@ -77,15 +77,21 @@ class MyTestCase(unittest.TestCase):
         mesonet_daily = mco.mesonet_etr(lat=46.3, elevation=1000.0)
         mesonet_etr = mesonet_daily['ETR'].values
 
-        plt.plot(gridmet_etr[100:250], label='gridmet')
-        plt.plot(mesonet_etr[100:250], label='mesonet')
-        plt.plot(agri_etr[100:250], label='agrimet')
+        plt.plot(gridmet_etr[121:273], label='gridmet')
+        plt.plot(mesonet_etr[121:273], label='mesonet')
+        plt.plot(agri_etr[121:273], label='agrimet')
+        plt.xlabel('GROWING SEASON DAY (MAY 01 - SEP 30)')
+        plt.ylabel('Tall Crop Reference ET (mm) daily')
         plt.legend()
-        plt.show()
-        ga_ratio = gridmet_etr.sum() / agri_etr.sum()
+        # plt.show()
+        saved = os.path.join(os.path.dirname(__file__), 'grid_agri_meso_fig.png')
+        print('saved to {}'.format(saved))
+        plt.savefig(saved)
+        ga_ratio = gridmet_etr[121:273].sum() / agri_etr[121:273].sum()
         print('gridmet - agrimet ratio: {}'.format(ga_ratio))
-        ma_ratio = mesonet_etr.sum() / agri_etr.sum()
+        ma_ratio = mesonet_etr[121:273].sum() / agri_etr[121:273].sum()
         print('mesonet - agrimet ratio: {}'.format(ma_ratio))
+        # plt.close()
 
 
 if __name__ == '__main__':
