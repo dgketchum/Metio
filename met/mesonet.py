@@ -18,7 +18,7 @@ import os
 from pprint import pprint
 
 from numpy import log
-from pandas import read_csv, to_datetime, DataFrame
+from pandas import read_csv, to_datetime, DataFrame, date_range
 from refet import calcs
 from refet.daily import Daily
 
@@ -113,6 +113,15 @@ class Mesonet(object):
         if self.start and self.end:
             self.table = self.table.ix[self.start: self.end]
 
+    def mesonet_ppt(self, daily=True):
+        if daily:
+            ppt_daily = self.table['Precipitation'].resample('D').sum().values
+            df = DataFrame(ppt_daily, columns=['Precipitation'])
+            df.index = date_range(self.table.index.min(), self.table.index.max(), freq='D')
+            return df
+        else:
+            return DataFrame(self.table['Precipitation'].values, columns=['Precipitation'])
+
     def mesonet_etr(self, lat=46.3, elevation=1000):
         t_dew = dewpoint_temp(self.table['Vapor Pressure'].resample('D').mean().values)
         ea = calcs._sat_vapor_pressure(t_dew)
@@ -126,9 +135,10 @@ class Mesonet(object):
         zw = 2.4
         etr = Daily(tmin=tmin, tmax=tmax, ea=ea, rs=rs, uz=uz, zw=zw, elev=elevation,
                     lat=lat, doy=doy).etr()
-        self.df = DataFrame(data=[doy, rs, etr, uz, ea, t_dew, tmax, tmin]).transpose()
-        self.df.columns = ['DOY', 'SR', 'ETR', 'UZ', 'EA', 'TDew', 'TMax', 'TMin']
-        return self.df
+        df = DataFrame(data=[doy, rs, etr, uz, ea, t_dew, tmax, tmin]).transpose()
+        df.columns = ['DOY', 'SR', 'ETR', 'UZ', 'EA', 'TDew', 'TMax', 'TMin']
+        df.index = date_range(self.table.index.min(), self.table.index.max(), freq='D')
+        return df
 
 
 def dewpoint_temp(e):
