@@ -16,6 +16,7 @@
 
 import os
 from datetime import datetime
+from numpy import hstack
 
 from matplotlib import pyplot as plt
 
@@ -23,7 +24,24 @@ from met.mesonet import Mesonet
 from met.thredds import GridMet
 
 
-def correct_mesonet_w_gridmet(start, end, lat, lon):
+def correct_pr_mesonet_gridmet(start, end, lat, lon):
+    s, e = datetime.strptime(start, '%Y-%m-%d'), \
+           datetime.strptime(end, '%Y-%m-%d')
+    gridmet = GridMet('pr', start=s, end=e,
+                      lat=lat, lon=lon)
+    gridmet_ppt = gridmet.get_point_timeseries()
+    gridmet_ppt = gridmet_ppt.values
+
+    mco = Mesonet(LOLO_MCO, start=start, end=end)
+    mesonet_ppt = mco.mesonet_ppt(daily=True)
+    mesonet_ppt = mesonet_ppt['Precipitation'].values
+    mesonet_ppt = mesonet_ppt.reshape((mesonet_ppt.shape[0], 1))
+    meso_gs_ppt, grid_gs_ppt = mesonet_ppt[121:273], gridmet_ppt[121:273]
+    comp = hstack((meso_gs_ppt, grid_gs_ppt))
+    pass
+
+
+def correct_etr_mesonet_gridmet(start, end, lat, lon):
     s, e = datetime.strptime(start, '%Y-%m-%d'), \
            datetime.strptime(end, '%Y-%m-%d')
     gridmet = GridMet('etr', start=s, end=e,
@@ -50,12 +68,13 @@ def correct_mesonet_w_gridmet(start, end, lat, lon):
 
 if __name__ == '__main__':
     home = os.path.expanduser('~')
-    for yr in ['2017', '2018']:
+    for yr in ['2018']:
         START = '{}-01-01'.format(yr)
         END = '{}-12-31'.format(yr)
         LAT = 46.748
         LON = -114.13
         LOLO_MCO = os.path.join(home, 'IrrigationGIS', 'lolo',
                                 'mesonet', 'Lolo Campground Weather MCO 2018.csv')
-        correct_mesonet_w_gridmet(START, END, LAT, LON)
+        correct_pr_mesonet_gridmet(START, END, LAT, LON)
+        # correct_etr_mesonet_gridmet(START, END, LAT, LON)
 # ========================= EOF ====================================================================
