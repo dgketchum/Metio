@@ -464,7 +464,7 @@ class GridMet(Thredds):
         xray = open_dataset(url)
         subset = xray.sel(lon=self.lon, lat=self.lat, method='nearest')
         subset = subset.loc[dict(day=slice(self.start, self.end))]
-        subset.rename({'day': 'time'}, inplace=True)
+        subset.rename({'day': 'time'}, inplace=True)  # FUTUREWARNING, going to loose inplace
         date_ind = self._date_index()
         subset['time'] = date_ind
         time = subset['time'].values
