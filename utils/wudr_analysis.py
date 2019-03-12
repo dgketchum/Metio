@@ -745,7 +745,6 @@ class DataCollector(Agrimet):
 
     def get_table_data_monthly(self):
         for yr in YEARS:
-
             if yr == YEARS[0]:
                 first = True
             else:
@@ -769,61 +768,61 @@ class DataCollector(Agrimet):
             m_crop_use_eff_ppt = effective_precip(m_ppt, m_crop_use)
 
             ratio = calc_etr[:] / m_etr[:, 0]
-            [data.append(x) for x in [m_ppt, m_etr, m_agri_etr, calc_etr,
-                                      ratio, m_crop_use_eff_ppt,
-                                      m_gridmet_eff_ppt, m_agrimet_eff_ppt]]
 
-            self.project_summary_monthly(yr, m_crop_use_eff_ppt, data)
+            for month, i in zip(range(4, 11), range(0, 7)):
 
-    def project_summary_monthly(self, yr, monthly_eff_ppt, data_list):
-        for month, i in zip(range(4, 11), range(0, 7)):
+                summary = deepcopy(data)
+                [summary.append(x) for x in [m_ppt[i][0], m_etr[i][0], m_agri_etr[i][0], calc_etr[i],
+                                             ratio[i], m_crop_use_eff_ppt[i][0],
+                                             m_gridmet_eff_ppt[i][0], m_agrimet_eff_ppt[i][0]]]
 
-            summary_list = deepcopy(data_list)
-            days = monthrange(int(yr), month=month)[1]
-            dt = datetime(int(yr), month, days)
-            mean_key = 'mean_{}_{}'.format(yr, month)
+                days = monthrange(int(yr), month=month)[1]
+                dt = datetime(int(yr), month, days)
+                mean_key = 'mean_{}_{}'.format(yr, month)
 
-            try:
-                acres_tot = self.csv['ACRES'].values.sum()
-            except KeyError:
-                acres_tot = self.csv['Acres'].values.sum()
-
-            if self.project == 'huc' and 'WUDR OE Proj' in list(self.csv['UNIT'].unique()):
-                print('{} GIS: {}'.format(self.table, self.csv['UNIT'].unique()))
-                proj_df = self.csv[self.csv['UNIT'] == 'WUDR OE Proj']
                 try:
-                    acres_proj = proj_df['ACRES'].values.sum()
+                    acres_tot = self.csv['ACRES'].values.sum()
                 except KeyError:
-                    acres_proj = proj_df['Acres'].values.sum()
-                acres_tot -= acres_proj
-            else:
-                acres_proj = 0.0
+                    acres_tot = self.csv['Acres'].values.sum()
 
-            if self.table in INTERSECTING_HUC_OE.keys():
-                intersect_project = INTERSECTING_HUC_OE[self.table]
-            else:
-                intersect_project = None
+                if self.project == 'huc' and 'WUDR OE Proj' in list(self.csv['UNIT'].unique()):
+                    print('{} GIS: {}'.format(self.table, self.csv['UNIT'].unique()))
+                    proj_df = self.csv[self.csv['UNIT'] == 'WUDR OE Proj']
+                    try:
+                        acres_proj = proj_df['ACRES'].values.sum()
+                    except KeyError:
+                        acres_proj = proj_df['Acres'].values.sum()
+                    acres_tot -= acres_proj
+                else:
+                    acres_proj = 0.0
 
-            acres_irr = acres_tot
-            sq_m_tot = self.csv['Sq_Meters'].values.sum()
-            sq_m_irr = sq_m_tot
-            [summary_list.append(x) for x in [acres_tot, acres_proj, intersect_project, sq_m_tot, acres_irr, sq_m_irr]]
+                if self.table in INTERSECTING_HUC_OE.keys():
+                    intersect_project = INTERSECTING_HUC_OE[self.table]
+                else:
+                    intersect_project = None
 
-            mean_mm = (self.csv[mean_key] * self.csv['Sq_Meters'] / self.csv['Sq_Meters'].values.sum()).values.sum()
-            et_vol_yr_m3 = (self.csv['Sq_Meters'] * self.csv[mean_key] / 1000.).values.sum()
-            et_vol_yr_af = (self.csv['Sq_Meters'] * self.csv[mean_key] / (1000. * 1233.48)).values.sum()
-            cc_vol_yr_cm = (self.csv['Sq_Meters'] * (self.csv[mean_key] - monthly_eff_ppt[i]) / 1000.).values.sum()
-            cc_vol_yr_af = (
-                    self.csv['Sq_Meters'] * (self.csv[mean_key] - monthly_eff_ppt[i]) / (1000. * 1233.48)).values.sum()
+                acres_irr = acres_tot
+                sq_m_tot = self.csv['Sq_Meters'].values.sum()
+                sq_m_irr = sq_m_tot
+                [summary.append(x) for x in [acres_tot, acres_proj, intersect_project, sq_m_tot, acres_irr, sq_m_irr]]
 
-            cc_mean_mm = mean_mm - monthly_eff_ppt[i]
-            [summary_list.append(x) for x in [mean_mm, cc_mean_mm, et_vol_yr_m3,
-                                              et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
+                mean_mm = (self.csv[mean_key] * self.csv['Sq_Meters'] / self.csv['Sq_Meters'].values.sum()).values.sum()
+                et_vol_yr_m3 = (self.csv['Sq_Meters'] * self.csv[mean_key] / 1000.).values.sum()
+                et_vol_yr_af = (self.csv['Sq_Meters'] * self.csv[mean_key] / (1000. * 1233.48)).values.sum()
+                cc_vol_yr_cm = (
+                        self.csv['Sq_Meters'] * (self.csv[mean_key] - m_crop_use_eff_ppt[i]) / 1000.).values.sum()
+                cc_vol_yr_af = (
+                        self.csv['Sq_Meters'] * (self.csv[mean_key] - m_crop_use_eff_ppt[i]) / (
+                        1000. * 1233.48)).values.sum()
 
-            summary_list = self.count_irrigation_types(summary_list)
-            self.df.loc[dt] = summary_list
+                cc_mean_mm = mean_mm - m_crop_use_eff_ppt[i]
+                [summary.append(x) for x in [mean_mm, cc_mean_mm[0], et_vol_yr_m3,
+                                             et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
 
-        self.check_area(acres_tot, sq_m_tot)
+                summary = self.count_irrigation_types(summary)
+                self.df.loc[dt] = summary
+
+            self.check_area(acres_tot, sq_m_tot)
 
     def get_table_data_annual(self):
         try:
@@ -1004,7 +1003,7 @@ def build_summary_table_monthly(source, shapes, tables, out_loc, project='oe'):
 
             d = DataCollector(project=project, csv=csv, table=table, lat=lat, lon=lon, monthly=True)
             d.get_table_data_monthly()
-
+            d.df.dropna(axis=0, how='all', inplace=True)
             master = concat([master, d.df])
 
         except FileNotFoundError:
@@ -1015,7 +1014,7 @@ def build_summary_table_monthly(source, shapes, tables, out_loc, project='oe'):
         master = master[master['DIVERSIONS'] > 0.]
         master['EFF'] = master['Crop_Cons_af'] / master['DIVERSIONS']
 
-    master.to_csv(os.path.join(out_loc, 'HUC_8_wProjects.csv'), date_format='%Y')
+    master.to_csv(os.path.join(out_loc, 'HUC_8_Monthly.csv'), date_format='%Y-%m')
 
 
 def build_summary_table(source, shapes, tables, out_loc, project='oe'):
