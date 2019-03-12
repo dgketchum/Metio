@@ -15,7 +15,10 @@
 # ===============================================================================
 
 import os
+from calendar import monthrange
+from copy import deepcopy
 from datetime import datetime
+from pprint import pprint
 
 from fiona import collection
 from fiona import open as fopen
@@ -275,7 +278,104 @@ HUC_TABLES = [
     'MT_17010210',
     'MT_17010211',
     'MT_17010212',
-    'MT_17010213']
+    'MT_17010213'
+]
+
+HUC_TABLES_FOUND = [
+    # 'MT_10010002',
+    'MT_10020001',
+    'MT_10020002',
+    # 'MT_10020003',
+    # 'MT_10020004',
+    # 'MT_10020005',
+    # 'MT_10020006',
+    # 'MT_10020007',
+    # 'MT_10020008',
+    # 'MT_10030101',
+    # 'MT_10030102',
+    # 'MT_10030103',
+    # 'MT_10030104',
+    # 'MT_10030105',
+    # 'MT_10030201',
+    # 'MT_10030202',
+    # 'MT_10030203',
+    # 'MT_10030204',
+    # 'MT_10030205',
+    # 'MT_10040101',
+    # 'MT_10040102',
+    # 'MT_10040103',
+    # 'MT_10040104',
+    # 'MT_10040105',
+    # 'MT_10040106',
+    # 'MT_10040201',
+    # 'MT_10040202',
+    # 'MT_10040203',
+    # 'MT_10040204',
+    # 'MT_10040205',
+    # 'MT_10050001',
+    # 'MT_10050002',
+    # 'MT_10050003',
+    # 'MT_10050004',
+    # 'MT_10050005',
+    # 'MT_10050006',
+    # 'MT_10050007',
+    # 'MT_10050008',
+    # 'MT_10050009',
+    # 'MT_10050010',
+    # 'MT_10050011',
+    # 'MT_10050012',
+    # 'MT_10050013',
+    # 'MT_10050014',
+    # 'MT_10050015',
+    # 'MT_10050016',
+    # 'MT_10060001',
+    # 'MT_10060002',
+    # 'MT_10060003',
+    # 'MT_10060004',
+    # 'MT_10060005',
+    # 'MT_10060006',
+    # 'MT_10060007',
+    # 'MT_10070001',
+    # 'MT_10070002',
+    # 'MT_10070003',
+    # 'MT_10070004',
+    # 'MT_10070005',
+    # 'MT_10070006',
+    # 'MT_10070007',
+    # 'MT_10070008',
+    # 'MT_10080010',
+    # 'MT_10080014',
+    # 'MT_10080015',
+    # 'MT_10080016',
+    # 'MT_10090101',
+    # 'MT_10090102',
+    # 'MT_10090207',
+    # 'MT_10090208',
+    # 'MT_10090209',
+    # 'MT_10090210',
+    # 'MT_10100001',
+    # 'MT_10100002',
+    # 'MT_10100003',
+    # 'MT_10100004',
+    # 'MT_10100005',
+    # 'MT_10110201',
+    # 'MT_10110202',
+    # 'MT_10110204',
+    # 'MT_17010101',
+    # 'MT_17010102',
+    # 'MT_17010104',
+    # 'MT_17010201',
+    # 'MT_17010202',
+    # 'MT_17010203',
+    # 'MT_17010204',
+    # 'MT_17010205',
+    # 'MT_17010206',
+    # 'MT_17010208',
+    # 'MT_17010210',
+    # 'MT_17010211',
+    # 'MT_17010212',
+    # 'MT_17010213'
+]
 
 COUNTIES = [
     'BE',
@@ -398,6 +498,7 @@ I_TYPES = ['P', 'S', 'F']
 YEARS = ['2008', '2009', '2010', '2011', '2012', '2013']
 
 START, END = '{}-04-15', '{}-10-15'
+M_START, M_END = '{}-04-01', '{}-10-31'
 FMT = '%Y-%m-%d'
 
 D = 3.0
@@ -438,7 +539,7 @@ def effective_precip(precip, ref_et):
     return eff_ppt_mm
 
 
-def make_tables(source, root):
+def make_tables_annual(source, root):
     df = None
     for t in source:
         for yr in YEARS:
@@ -460,6 +561,39 @@ def make_tables(source, root):
         # df.to_csv(new_csv, index_label='ID')
 
 
+def make_tables_monthly(source, root):
+    df = None
+    found = []
+    for t in source:
+        first = True
+        try:
+            for yr in YEARS:
+                for mo in range(4, 11):
+                    f_name = '{}_{}_{}ee_export.csv'.format(t, yr, mo)
+                    new_f_name = '{}.csv'.format(t)
+                    csv = os.path.join(root, f_name)
+                    new_csv = os.path.join(root, new_f_name)
+                    if first:
+                        df = read_csv(csv)
+                        to_drop = ['system:index', 'Shape_Leng', '.geo']
+                        df.drop(columns=to_drop, inplace=True)
+                        df.rename(columns={'mean': 'mean_{}_{}'.format(yr, mo)}, inplace=True)
+                        df.rename(columns={'Shape_Area': 'Sq_Meters'}, inplace=True)
+                        first = False
+                    else:
+                        dummy_df = read_csv(csv)
+                        s = Series(dummy_df['mean'], name='mean_{}_{}'.format(yr, mo))
+                        df['mean_{}_{}'.format(yr, mo)] = s
+                        s = None
+
+        except FileNotFoundError:
+            pass
+
+        found.append(t)
+        df.to_csv(new_csv, index_label='ID')
+    pprint(found)
+
+
 def count_project_fields(source, tables):
     ct = 0
     for t in tables:
@@ -475,11 +609,11 @@ def count_project_fields(source, tables):
 
 class DataCollector(Agrimet):
 
-    def __init__(self, project, csv, table, station=None, lat=None, lon=None):
+    def __init__(self, project, csv, table, station=None, lat=None, lon=None, monthly=False):
         Agrimet.__init__(self, station=station, lat=lat, lon=lon)
 
+        self.monthly = monthly
         self.make_empty_df()
-
         self.first = True
         self.project = project
         self.csv = csv
@@ -577,7 +711,10 @@ class DataCollector(Agrimet):
         return data
 
     def make_empty_df(self):
-        index = date_range(start='20080101', end='20131231', freq='y')
+        if self.monthly:
+            index = date_range(start='20080101', end='20131231', freq='m')
+        else:
+            index = date_range(start='20080101', end='20131231', freq='y')
         df = DataFrame(data=None, columns=['name',
                                            'code',
                                            'gridmet_ppt',
@@ -606,7 +743,89 @@ class DataCollector(Agrimet):
                        index=index)
         self.df = df
 
-    def get_table_data(self):
+    def get_table_data_monthly(self):
+        for yr in YEARS:
+
+            if yr == YEARS[0]:
+                first = True
+            else:
+                first = False
+
+            if self.project == 'co':
+                data = [COUNTY_KEY[self.table], self.table]
+            elif self.project == 'huc':
+                data = [self.table.replace('MT_', ''), None]
+            else:
+                data = [self.table, None]
+
+            s, e = datetime.strptime(START.format(yr), FMT), datetime.strptime(END.format(yr), FMT)
+            lat, lon = self.station_coords[self.station][0], self.station_coords[self.station][1]
+            m_ppt, m_etr = self.get_gridmet(s, e, lat, lon)
+            m_agri_etr, calc_etr = self.get_agrimet_etr(yr, first=first)
+            m_crop_use = self.get_agrimet_crop(yr)
+
+            m_gridmet_eff_ppt = effective_precip(m_ppt, m_etr)
+            m_agrimet_eff_ppt = effective_precip(m_ppt, m_agri_etr)
+            m_crop_use_eff_ppt = effective_precip(m_ppt, m_crop_use)
+
+            ratio = calc_etr[:] / m_etr[:, 0]
+            [data.append(x) for x in [m_ppt, m_etr, m_agri_etr, calc_etr,
+                                      ratio, m_crop_use_eff_ppt,
+                                      m_gridmet_eff_ppt, m_agrimet_eff_ppt]]
+
+            self.project_summary_monthly(yr, m_crop_use_eff_ppt, data)
+
+    def project_summary_monthly(self, yr, monthly_eff_ppt, data_list):
+        for month, i in zip(range(4, 11), range(0, 7)):
+
+            summary_list = deepcopy(data_list)
+            days = monthrange(int(yr), month=month)[1]
+            dt = datetime(int(yr), month, days)
+            mean_key = 'mean_{}_{}'.format(yr, month)
+
+            try:
+                acres_tot = self.csv['ACRES'].values.sum()
+            except KeyError:
+                acres_tot = self.csv['Acres'].values.sum()
+
+            if self.project == 'huc' and 'WUDR OE Proj' in list(self.csv['UNIT'].unique()):
+                print('{} GIS: {}'.format(self.table, self.csv['UNIT'].unique()))
+                proj_df = self.csv[self.csv['UNIT'] == 'WUDR OE Proj']
+                try:
+                    acres_proj = proj_df['ACRES'].values.sum()
+                except KeyError:
+                    acres_proj = proj_df['Acres'].values.sum()
+                acres_tot -= acres_proj
+            else:
+                acres_proj = 0.0
+
+            if self.table in INTERSECTING_HUC_OE.keys():
+                intersect_project = INTERSECTING_HUC_OE[self.table]
+            else:
+                intersect_project = None
+
+            acres_irr = acres_tot
+            sq_m_tot = self.csv['Sq_Meters'].values.sum()
+            sq_m_irr = sq_m_tot
+            [summary_list.append(x) for x in [acres_tot, acres_proj, intersect_project, sq_m_tot, acres_irr, sq_m_irr]]
+
+            mean_mm = (self.csv[mean_key] * self.csv['Sq_Meters'] / self.csv['Sq_Meters'].values.sum()).values.sum()
+            et_vol_yr_m3 = (self.csv['Sq_Meters'] * self.csv[mean_key] / 1000.).values.sum()
+            et_vol_yr_af = (self.csv['Sq_Meters'] * self.csv[mean_key] / (1000. * 1233.48)).values.sum()
+            cc_vol_yr_cm = (self.csv['Sq_Meters'] * (self.csv[mean_key] - monthly_eff_ppt[i]) / 1000.).values.sum()
+            cc_vol_yr_af = (
+                    self.csv['Sq_Meters'] * (self.csv[mean_key] - monthly_eff_ppt[i]) / (1000. * 1233.48)).values.sum()
+
+            cc_mean_mm = mean_mm - monthly_eff_ppt[i]
+            [summary_list.append(x) for x in [mean_mm, cc_mean_mm, et_vol_yr_m3,
+                                              et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
+
+            summary_list = self.count_irrigation_types(summary_list)
+            self.df.loc[dt] = summary_list
+
+        self.check_area(acres_tot, sq_m_tot)
+
+    def get_table_data_annual(self):
         try:
             for yr in YEARS:
 
@@ -692,12 +911,13 @@ class DataCollector(Agrimet):
         [data_list.append(x) for x in [acres_tot, acres_proj, intersect_project, sq_m_tot, acres_irr, sq_m_irr]]
 
         mean_mm = (self.csv[mean_key] * self.csv['Sq_Meters'] / self.csv['Sq_Meters'].values.sum()).values.sum()
-        cc_mean_mm = mean_mm - season_eff_ppt
         et_vol_yr_m3 = (self.csv['Sq_Meters'] * self.csv[mean_key] / 1000.).values.sum()
         et_vol_yr_af = (self.csv['Sq_Meters'] * self.csv[mean_key] / (1000. * 1233.48)).values.sum()
         cc_vol_yr_cm = (self.csv['Sq_Meters'] * (self.csv[mean_key] - season_eff_ppt) / 1000.).values.sum()
         cc_vol_yr_af = (
                 self.csv['Sq_Meters'] * (self.csv[mean_key] - season_eff_ppt) / (1000. * 1233.48)).values.sum()
+
+        cc_mean_mm = mean_mm - season_eff_ppt
         [data_list.append(x) for x in [mean_mm, cc_mean_mm, et_vol_yr_m3,
                                        et_vol_yr_af, cc_vol_yr_cm, cc_vol_yr_af]]
 
@@ -758,6 +978,44 @@ class DataCollector(Agrimet):
                   'sq m, actual is {} sq m'.format(acres,
                                                    acres * 4046.86,
                                                    sq_meters))
+
+
+def build_summary_table_monthly(source, shapes, tables, out_loc, project='oe'):
+    master = DataFrame()
+    lat, lon = None, None
+    for table in source:
+        print('Processing {}'.format(table))
+        try:
+            csv = read_csv(os.path.join(tables, '{}.csv'.format(table)))
+
+            shp = os.path.join(shapes, '{}.shp'.format(table))
+            with fopen(shp) as src:
+                # .shp files should be in epsg: 102300
+                for feat in src:
+                    if src.crs != {'init': 'epsg:4326'}:
+                        coords = feat['geometry']['coordinates'][0][0]
+                        if len(coords) > 2:
+                            coords = coords[0]
+
+                        lat, lon = state_plane_MT_to_WGS(coords[1], coords[0])
+                        break
+                    else:
+                        lat, lon = feat['geometry']['coordinates'][1], feat['geometry']['coordinates'][0]
+
+            d = DataCollector(project=project, csv=csv, table=table, lat=lat, lon=lon, monthly=True)
+            d.get_table_data_monthly()
+
+            master = concat([master, d.df])
+
+        except FileNotFoundError:
+            print('{} not found'.format(table))
+
+    if project == 'oe':
+        master['DIVERSIONS'] = DIVERSIONS
+        master = master[master['DIVERSIONS'] > 0.]
+        master['EFF'] = master['Crop_Cons_af'] / master['DIVERSIONS']
+
+    master.to_csv(os.path.join(out_loc, 'HUC_8_wProjects.csv'), date_format='%Y')
 
 
 def build_summary_table(source, shapes, tables, out_loc, project='oe'):
@@ -905,7 +1163,8 @@ if __name__ == '__main__':
     huc_shapefile = os.path.join(home, 'IrrigationGIS', 'Montana',
                                  'Statewide_Irrigation_Shapefile', 'by_huc_8')
 
-    table = os.path.join(home, 'ssebop', 'ssebop_exports', 'statewide')
-    build_summary_table(HUC_TABLES, huc_shapefile, table, out_loc=table, project='huc')
+    table = os.path.join(home, 'ssebop', 'ssebop_exports', 'huc8_monthly')
+    # make_tables_monthly(HUC_TABLES, table)
+    build_summary_table_monthly(HUC_TABLES_FOUND, huc_shapefile, table, out_loc=table, project='huc')
 
 # ========================= EOF ====================================================================
