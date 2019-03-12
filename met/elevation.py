@@ -22,11 +22,10 @@ import pandas as pd
 # script for returning elevation from lat, long, based on open elevation data
 # which in turn is based on SRTM
 def get_elevation(lat, long):
-    query = ('https://api.open-elevation.com/api/v1/lookup'
-             f'?locations={lat},{long}')
-    r = requests.get(query).json()  # json object, various ways you can extract value
-    # one approach is to use pandas json functionality:
-    elevation = pd.io.json.json_normalize(r, 'results')['elevation'].values[0]
+    query = 'https://nationalmap.gov/epqs/pqs.php?units=feet' \
+            '&output=json&x={}&y={}'.format(long, lat)
+    r = requests.get(query).json()
+    elevation = r['USGS_Elevation_Point_Query_Service']['Elevation_Query']['Elevation'] * 0.3048
     return elevation
 
 
