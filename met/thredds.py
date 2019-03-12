@@ -33,7 +33,9 @@ from rasterio.warp import calculate_default_transform as cdt
 from xlrd.xldate import xldate_from_date_tuple
 from xarray import open_dataset
 from pandas import date_range, DataFrame
+import warnings
 
+warnings.simplefilter(action='ignore', category=FutureWarning)
 from bounds import GeoBounds
 
 with hooks():
