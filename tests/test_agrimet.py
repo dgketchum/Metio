@@ -399,15 +399,17 @@ class TestAgrimet(unittest.TestCase):
                 print('{} appears invalid'.format(a.station))
 
     def test_web_retrieval_all_stations_crop(self):
-
+        fails = []
         for s in self.all_stations:
             a = Agrimet(station=s, start_date=self.start_season,
                         end_date=self.end_season, interval='daily')
-            # try:
-            a.fetch_crop_data()
-            print('{} appears valid'.format(a.station))
-            # except Exception as e:
-            #     print('{} appears invalid: {}'.format(a.station, e))
+            try:
+                a.fetch_crop_data()
+                print('{} appears valid'.format(a.station))
+            except Exception as e:
+                print('{} appears invalid: {}'.format(a.station, e))
+                fails.append(a.station)
+        print(fails)
 
     def test_write_agrimet_shapefile(self):
 

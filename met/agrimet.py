@@ -469,8 +469,12 @@ class Agrimet(object):
 
     def get_gp_crop(self):
         url = AGRIMET_CROP_REQ_SCRIPT_GP.format(self.station, self.start.year)
-        raw_df = read_table(url, skip_blank_lines=True, skiprows=[3], index_col=[0],
-                            header=2, engine='python', delim_whitespace=True)
+        data = requests.get(url).content
+        str_data = str(data, 'utf-8')
+        file = open('data.txt', 'w')
+        file.write(str_data)
+        raw_df = read_table('data.txt', skip_blank_lines=True, skiprows=[0, 1, 2, 3, 5, 6], index_col=[0],
+                            engine='python', delim_whitespace=True, error_bad_lines=False)
 
         raw_df = raw_df.iloc[2:, :]
         start_str = format(int(raw_df.first_valid_index()), '03d')
