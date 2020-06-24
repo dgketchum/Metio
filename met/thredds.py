@@ -22,8 +22,7 @@ import os
 import copy
 from shutil import rmtree
 from tempfile import mkdtemp
-from datetime import datetime
-from numpy import empty, float32, datetime64, timedelta64, argmin, abs, array, flipud
+from numpy import empty, float32, datetime64, timedelta64, argmin, abs, array, floor
 from rasterio import open as rasopen
 from rasterio.crs import CRS
 from rasterio.transform import Affine
@@ -31,8 +30,6 @@ from rasterio.mask import mask
 from rasterio.warp import reproject, Resampling
 from rasterio.warp import calculate_default_transform as cdt
 
-from shapely.geometry import Polygon
-from xlrd.xldate import xldate_from_date_tuple
 from xarray import open_dataset
 from pandas import date_range, DataFrame
 import warnings
@@ -176,8 +173,8 @@ class Thredds(object):
             target_res = target_affine.a
             res_coeff = res[0] / target_res
 
-            new_array = empty(shape=(1, round(array.shape[0] * res_coeff),
-                                     round(array.shape[1] * res_coeff)), dtype=float32)
+            new_array = empty(shape=(1, int(floor(array.shape[0] * res_coeff)),
+                                     int(floor(array.shape[1] * res_coeff))), dtype=float32)
             aff = src.transform
 
             new_affine = Affine(aff.a / res_coeff, aff.b, aff.c, aff.d, aff.e / res_coeff, aff.f)
@@ -191,7 +188,7 @@ class Thredds(object):
 
             with rasopen(resample_path, 'w', **profile) as dst:
                 reproject(array, new_array, src_transform=aff, dst_transform=new_affine, src_crs=src.crs,
-                          dst_crs=src.crs, resampling=Resampling.nearest)
+                          dst_crs=src.crs, resampling=Resampling.cubic)
 
                 dst.write(new_array)
 

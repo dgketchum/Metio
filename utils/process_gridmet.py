@@ -45,6 +45,7 @@ class CatchmetGridmet():
         self.id = _id
         self.variable = variable
         self.tif_name = os.path.join(self.tif, 'F{}_{}_{}_{}.tif'.format(_id, variable, year, month))
+        self.clip_name = os.path.join(self.tif, 'F{}_{}_{}_{}_clip.tif'.format(_id, variable, year, month))
         self.catchment = self._get_feature()
 
         self.arr = None
@@ -79,7 +80,7 @@ class CatchmetGridmet():
                              'width': out_arr.shape[2],
                              'transform': out_trans})
 
-        with raster_open(self.tif_name, 'w', **out_meta) as dst:
+        with raster_open(self.clip_name, 'w', **out_meta) as dst:
             dst.write(out_arr)
 
         return out_arr

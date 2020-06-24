@@ -80,6 +80,16 @@ class TestGridMet(unittest.TestCase):
         shape = 1, l8.rasterio_geometry['height'], l8.rasterio_geometry['width']
         self.assertEqual(pet.shape, shape)
 
+    def test_conforming_array_local(self):
+        l8 = Landsat8(self.dir_name_LC8)
+        polygon = l8.get_tile_geometry()
+        bounds = RasterBounds(affine_transform=l8.rasterio_geometry['transform'], profile=l8.rasterio_geometry)
+        gridmet = GridMet(self.var, date=self.date, bbox=bounds,
+                          target_profile=l8.rasterio_geometry, clip_feature=polygon)
+        pet = gridmet.get_data_subset(file_url='/home/dgketchum/Downloads/{}_{}.nc'.format(self.var, self.date.year))
+        shape = 1, l8.rasterio_geometry['height'], l8.rasterio_geometry['width']
+        self.assertEqual(pet.shape, shape)
+
     def test_save_to_netcdf(self):
         """ Test save native netcdf data from Thredds.Gridmet to disk.
         :return: 
