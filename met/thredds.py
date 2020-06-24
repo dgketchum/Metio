@@ -23,13 +23,15 @@ import copy
 from shutil import rmtree
 from tempfile import mkdtemp
 from datetime import datetime
-from numpy import empty, float32, datetime64, timedelta64, argmin, abs, array
+from numpy import empty, float32, datetime64, timedelta64, argmin, abs, array, flipud
 from rasterio import open as rasopen
 from rasterio.crs import CRS
 from rasterio.transform import Affine
 from rasterio.mask import mask
 from rasterio.warp import reproject, Resampling
 from rasterio.warp import calculate_default_transform as cdt
+
+from shapely.geometry import Polygon
 from xlrd.xldate import xldate_from_date_tuple
 from xarray import open_dataset
 from pandas import date_range, DataFrame
@@ -98,7 +100,8 @@ class Thredds(object):
                         'transform': dst_affine,
                         'width': dst_width,
                         'height': dst_height})
-
+        if subset.shape[0] > 1:
+            profile.update({'count': subset.shape[0]})
         with rasopen(proj_path, 'w', **profile) as dst:
             dst.write(subset)
 
@@ -141,7 +144,7 @@ class Thredds(object):
         mask_path = os.path.join(self.temp_dir, 'masked.tif')
 
         with rasopen(self.reprojection) as src:
-            out_arr, out_trans = mask(src, self.clip_feature, crop=True,
+            out_arr, out_trans = mask(src, [self.clip_feature], crop=True,
                                       all_touched=True)
             out_meta = src.meta.copy()
             out_meta.update({'driver': 'GTiff',
@@ -412,10 +415,13 @@ class GridMet(Thredds):
         if not self.bbox and not self.lat:
             self.bbox = GeoBounds()
 
-    def get_data_subset(self, out_filename=None):
+    def get_data_subset(self, out_filename=None, file_url=None):
 
-        url = self._build_url()
-        xray = open_dataset(url)
+        if file_url:
+            xray = open_dataset(file_url)
+        else:
+            url = self._build_url()
+            xray = open_dataset(url)
 
         north_ind = argmin(abs(xray.lat.values - (self.bbox.north + 1.)))
         south_ind = argmin(abs(xray.lat.values - (self.bbox.south - 1.)))
@@ -431,9 +437,9 @@ class GridMet(Thredds):
                                           east_val, north_val))
 
         if self.variable != 'elev':
-            xray.rename({'day': 'time'}, inplace=True)
+            xray = xray.rename({'day': 'time'})
             subset = xray.loc[dict(time=slice(self.start, self.end),
-                                   lat=slice(south_val, north_val),
+                                   lat=slice(north_val, south_val),
                                    lon=slice(west_val, east_val))]
 
             date_ind = self._date_index()
@@ -455,11 +461,11 @@ class GridMet(Thredds):
             setattr(self, 'width', subset.dims['lon'])
             setattr(self, 'height', subset.dims['lat'])
             arr = subset.elevation.values
+            arr = arr.reshape(1, arr.shape[0], arr.shape[1])
             conformed_array = self.conform(arr, out_file=out_filename)
             return conformed_array
 
     def get_point_timeseries(self):
-
         url = self._build_url()
         xray = open_dataset(url)
         subset = xray.sel(lon=self.lon, lat=self.lat, method='nearest')
@@ -472,6 +478,32 @@ class GridMet(Thredds):
         df = DataFrame(data=series, index=time)
         df.columns = [self.variable]
         return df
+
+    def get_area_timeseries(self, file_url=None):
+        if file_url:
+            xray = open_dataset(file_url)
+        else:
+            url = self._build_url()
+            xray = open_dataset(url)
+
+        north_ind = argmin(abs(xray.lat.values - (self.bbox.north + 1.)))
+        south_ind = argmin(abs(xray.lat.values - (self.bbox.south - 1.)))
+        west_ind = argmin(abs(xray.lon.values - (self.bbox.west - 1.)))
+        east_ind = argmin(abs(xray.lon.values - (self.bbox.east + 1.)))
+
+        north_val = xray.lat.values[north_ind]
+        south_val = xray.lat.values[south_ind]
+        west_val = xray.lon.values[west_ind]
+        east_val = xray.lon.values[east_ind]
+
+        xray = xray.rename({'day': 'time'})
+        subset = xray.loc[dict(time=slice(self.start, self.end),
+                               lat=slice(north_val, south_val),
+                               lon=slice(west_val, east_val))]
+
+        arr = subset[self.kwords[self.variable]].values
+        conformed_array = self.conform(arr)
+        return conformed_array
 
     def _build_url(self):
 
