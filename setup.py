@@ -56,7 +56,7 @@ setup(name='metio',
       test_suite='tests.test_suite.suite',
       install_requires=['numpy', 'geopy', 'pandas', 'requests', 'fiona',
                         'future', 'xarray', 'pyproj', 'rasterio', 'xlrd',
-                        'SatelliteImage', 'bs4', 'netcdf4', 'refet'],
+                        'SatelliteImage', 'bs4', 'netcdf4', 'refet', 'bounds'],
       **setup_kwargs)
 
 
