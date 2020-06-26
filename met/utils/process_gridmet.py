@@ -126,7 +126,7 @@ class CatchmetGridmet():
 
 
 if __name__ == '__main__':
-    gridmet = CatchmetGridmet(2014, 1, _id=8, variable='elev')
+    gridmet = CatchmetGridmet(2014, 1, _id=8, variable='temp')
     array = gridmet.get_monthly_gridmet()
     pass
 # ========================= EOF ====================================================================
