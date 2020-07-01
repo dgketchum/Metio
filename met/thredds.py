@@ -22,7 +22,7 @@ import os
 import copy
 from shutil import rmtree
 from tempfile import mkdtemp
-from numpy import empty, float32, datetime64, timedelta64, argmin, abs, array, floor
+from numpy import empty, float32, datetime64, timedelta64, argmin, abs, array, floor, mean, sum
 from rasterio import open as rasopen
 from rasterio.crs import CRS
 from rasterio.transform import Affine
@@ -476,7 +476,7 @@ class GridMet(Thredds):
         df.columns = [self.variable]
         return df
 
-    def get_area_timeseries(self, file_url=None):
+    def get_area_timeseries(self, file_url=None, operation=None):
         if file_url:
             xray = open_dataset(file_url)
         else:
@@ -499,6 +499,19 @@ class GridMet(Thredds):
                                lon=slice(west_val, east_val))]
 
         arr = subset[self.kwords[self.variable]].values
+
+        if operation == 'sum':
+            arr = arr.sum(axis=0)
+            arr = arr.reshape(1, arr.shape[0], arr.shape[1])
+        elif operation == 'mean':
+            arr = mean(arr, axis=0)
+            arr = arr.reshape(1, arr.shape[0], arr.shape[1])
+        else:
+            if arr.shape[0] > 1 and arr.shape[2]:
+                raise ValueError('not ready to conform 3D arrays yet')
+            else:
+                pass
+
         conformed_array = self.conform(arr)
         return conformed_array
 

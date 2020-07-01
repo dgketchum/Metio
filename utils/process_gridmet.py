@@ -98,19 +98,16 @@ class CatchmetGridmet():
         if self.variable == 'pr':
             self.gridmet = GridMet(self.variable, **kwargs)
             path = os.path.join(self.netcdf, '{}_{}.nc'.format(self.variable, self.year))
-            arr = self.gridmet.get_area_timeseries(file_url=path)
-            self.arr = arr.sum(axis=0)
+            self.arr = self.gridmet.get_area_timeseries(file_url=path, operation='sum')
 
         elif self.variable == 'temp':
             path = os.path.join(self.netcdf, 'tmmx_{}.nc'.format(self.year))
             self.gridmet = GridMet('tmmx', **kwargs)
-            max = self.gridmet.get_area_timeseries(file_url=path)
-
+            mean_max = self.gridmet.get_area_timeseries(file_url=path, operation='mean')
             path = os.path.join(self.netcdf, 'tmmn_{}.nc'.format(self.year))
             self.gridmet = GridMet('tmmn', **kwargs)
-            min = self.gridmet.get_area_timeseries(file_url=path)
-
-            self.arr = mean([min, max], axis=0)
+            mean_min = self.gridmet.get_area_timeseries(file_url=path, operation='mean')
+            self.arr = mean([mean_max, mean_min], axis=0)
 
         elif self.variable == 'elev':
             self.gridmet = GridMet(self.variable, **kwargs)
@@ -118,7 +115,7 @@ class CatchmetGridmet():
             self.arr = self.gridmet.get_data_subset(file_url=path)
 
         else:
-            raise NotImplementedError()
+            raise NotImplementedError("choose from 'temp', 'pr', or 'elev'")
 
         arr = self._clip_to_catchment()
 
